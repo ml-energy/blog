@@ -1,0 +1,58 @@
+# Project information
+site_name: ML.ENERGY Blog
+site_url: https://ml.energy/blog
+site_author: Jae-Won Chung
+site_description: Research & tech blog ran by ML.ENERGY
+edit_uri: ""
+
+copyright: Copyright &copy; 2023 Jae-Won Chung
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  icon:
+    logo: material/lightning-bolt
+  favicon: assets/img/favicon.png
+  features:
+    - navigation.sections
+  palette:
+    - scheme: slate
+      primary: ml.energy
+      accent: ml.energy
+      toggle:
+        icon: fontawesome/solid/sun
+        name: Switch to light mode
+    - scheme: default
+      primary: ml.energy
+      accent: ml.energy
+      toggle:
+        icon: fontawesome/regular/moon
+        name: Switch to dark mode
+
+plugins:
+  - meta
+  - search
+  - tags
+  - blog:
+      blog_dir: .
+      post_readtime: false
+      post_url_format: "{categories}/{slug}"
+      post_url_max_categories: 2
+  - rss:
+      match_path: posts/.* 
+      date_from_meta:
+        as_creation: date
+      categories:
+        - categories
+        - tags
+
+nav:
+  - index.md
+
+extra_css:
+  - assets/css/color.css
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.snippets
+  - pymdownx.superfences

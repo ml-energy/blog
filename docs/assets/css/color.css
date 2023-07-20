@@ -1,0 +1,15 @@
+[data-md-color-primary="ml.energy"] {
+  --md-primary-fg-color:        #23d175;
+  --md-primary-fg-color--light: #23d175;
+  --md-primary-bg-color:        #ffffff;
+  --md-primary-bg-color--light: #ffffff;
+  /* --md-primary-bg-color:        #4d4d4d; */
+  /* --md-primary-bg-color--light: #4d4d4d; */
+}
+
+[data-md-color-accent="ml.energy"] {
+  --md-accent-fg-color:              #3b943c;
+  --md-accent-fg-color--transparent: #3b943c50;
+  --md-accent-bg-color:              #79d07a;
+  --md-accent-bg-color--light:       #79d07a;
+}
