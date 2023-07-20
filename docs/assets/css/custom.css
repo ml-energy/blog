@@ -1,0 +1,4 @@
+/* Hide the 'Continue reading' button */
+.md-post__action {
+  display: none;
+}

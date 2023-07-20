@@ -12,9 +12,12 @@ theme:
   custom_dir: docs/overrides
   icon:
     logo: material/lightning-bolt
-  favicon: assets/img/favicon.png
+  favicon: assets/img/favicon.ico
   features:
+    - search.suggest
     - navigation.sections
+    - navigation.instant
+    - navigation.instant.prefetch
   palette:
     - scheme: slate
       primary: ml.energy
@@ -44,15 +47,16 @@ plugins:
         as_creation: date
       categories:
         - categories
-        - tags
 
 nav:
   - index.md
 
 extra_css:
   - assets/css/color.css
+  - assets/css/custom.css
 
 markdown_extensions:
   - pymdownx.highlight
   - pymdownx.snippets
   - pymdownx.superfences
+  - footnotes

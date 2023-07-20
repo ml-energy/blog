@@ -4,6 +4,8 @@ authors:
   - jaywonchung
 categories:
   - energy
+links:
+  - ZeusMonitor: https://ml.energy/zeus/reference/monitor/#zeus.monitor.ZeusMonitor
 ---
 
 # Accounting GPU energy consumption correctly
