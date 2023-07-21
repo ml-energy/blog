@@ -4,6 +4,7 @@ authors:
   - jaywonchung
 categories:
   - energy
+  - open-source
 links:
   - Leaderboard: https://ml.energy/leaderboard
 ---

@@ -2,7 +2,7 @@
 site_name: ML.ENERGY Blog
 site_url: https://ml.energy/blog
 site_author: Jae-Won Chung
-site_description: Research & tech blog ran by ML.ENERGY
+site_description: ML.ENERGY research & tech blog
 edit_uri: ""
 
 copyright: Copyright &copy; 2023 Jae-Won Chung
@@ -36,6 +36,11 @@ plugins:
   - meta
   - search
   - tags
+  - social:
+      cards_dir: assets/img/social
+      cards_layout_options:
+        background_color: "#23d175"
+        color: "#000000"
   - blog:
       blog_dir: .
       post_readtime: false
@@ -55,8 +60,14 @@ extra_css:
   - assets/css/color.css
   - assets/css/custom.css
 
+extra_javascript:
+  - assets/js/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
 markdown_extensions:
   - pymdownx.highlight
-  - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
   - footnotes
