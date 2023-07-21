@@ -1,0 +1,28 @@
+name: Build and deploy blog
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event.repository.fork == false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          cache: 'pip'
+      - name: Install mkdocs-material-insiders
+        env:
+          GH_TOKEN: ${{ secrets.MKDOCS_MATERIAL_INSIDERS_PAT }}
+        run: pip install git+https://${GH_TOKEN}@github.com/jaywonchung/mkdocs-material-insiders.git
+      - name: Install other homepage dependencies
+        run: pip install -r requirements.txt
+      - name: Build homepage
+        run: mkdocs build
+      - name: Deploy to GitHub Pages
+        run: mkdocs gh-deploy --force
