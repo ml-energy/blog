@@ -1,1 +1,1 @@
-# Welcome to our blog!
+# ML.ENERGY research and tech blog
