@@ -1,3 +1,4 @@
 .envrc
 .cache/
 site/
+.ipynb_checkpoints/
