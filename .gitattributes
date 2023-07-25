@@ -1,0 +1,2 @@
+# Exclude the plot notebook from language statistics
+plots.ipynb linguist-vendored
