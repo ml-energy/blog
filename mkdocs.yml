@@ -74,6 +74,9 @@ nav:
   - index.md
 
 extra:
+  analytics:
+    provider: google
+    property: G-C013T57GV2
   social:
     - icon: material/rss
       link: https://ml.energy/blog/feed_rss_created.xml
