@@ -1,3 +1,4 @@
 pillow
 cairosvg
+mkdocs-material
 mkdocs-rss-plugin==1.7.0

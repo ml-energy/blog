@@ -1,11 +1,11 @@
 # Project information
 site_name: ML.ENERGY Blog
 site_url: https://ml.energy/blog
-site_author: Jae-Won Chung
+site_author: The ML.ENERGY Initiative
 site_description: ML.ENERGY research & tech blog
 edit_uri: ""
 
-copyright: Copyright &copy; 2023 Jae-Won Chung
+copyright: Copyright &copy; 2025 The ML.ENERGY Initiative
 
 theme:
   name: material
@@ -34,7 +34,6 @@ theme:
         name: Switch to dark mode
 
 plugins:
-  - typeset
   - meta
   - search
   - tags
@@ -67,8 +66,8 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 nav:
   - index.md

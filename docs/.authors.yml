@@ -1,4 +1,5 @@
-jaywonchung:
-  name: Jae-Won Chung
-  description: PhD Student
-  avatar: https://ml.energy/assets/img/members/jae-won.jpg
+authors:
+  jaywonchung:
+    name: Jae-Won Chung
+    description: PhD Student
+    avatar: https://ml.energy/assets/img/members/jae-won.jpg

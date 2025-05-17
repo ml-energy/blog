@@ -7,19 +7,22 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: github.event.repository.fork == false
+    if: github.repository_owner == 'ml-energy'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.11
           cache: 'pip'
-      - name: Install mkdocs-material-insiders
-        env:
-          GH_TOKEN: ${{ secrets.MKDOCS_MATERIAL_INSIDERS_PAT }}
-        run: pip install git+https://${GH_TOKEN}@github.com/jaywonchung/mkdocs-material-insiders.git@9.1.21-insiders-4.38.1
+      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
+      - uses: actions/cache@v4
+        with:
+          key: mkdocs-material-${{ env.cache_id }}
+          path: .cache
+          restore-keys: |
+            mkdocs-material-
       - name: Install other homepage dependencies
         run: pip install -r requirements.txt
       - name: Deploy to GitHub Pages
