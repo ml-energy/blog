@@ -9,9 +9,9 @@ links:
   - Zeus NSDI'23 paper: https://www.usenix.org/conference/nsdi23/presentation/you
 ---
 
-# Does Zeus Hurt Model Quality?
+# ML Energy, Performance, and Accuracy
 
-Zeus changes the model's training batch size to optimize time and energy consumption, but does that hurt the model's final quality?
+Zeus's [batch size optimizer](https://ml.energy/zeus/optimize/batch_size_optimizer) changes the model's training batch size to optimize time and energy consumption, but does that hurt the model's final quality?
 Short answer: No.
 Let's look into how in today's post.
 
