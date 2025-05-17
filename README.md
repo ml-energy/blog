@@ -4,8 +4,6 @@
 
 ## Install dependencies
 
-You need [mkdocs-material-insiders](https://squidfunk.github.io/mkdocs-material/insiders/) to build the blog.
-After installing that, run:
 ```sh
 pip install -r requirements.txt
 ```
