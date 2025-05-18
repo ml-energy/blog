@@ -1,7 +1,7 @@
 ---
 date: 2025-05-17
 authors:
-  - jaywonchung
+  - michahn01
 categories:
   - energy
   - measurement
