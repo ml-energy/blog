@@ -85,7 +85,7 @@ ANE: 0 mJ
 ```
 
 !!! Note
-    Some fields may be `None`, which happens when a processor doesn't support energy metrics for that field. On M1 chips (like on my own machine), DRAM, ANE, and GPU SRAM results are often unavailable. On newer machines (M2 and above), all fields are typically present.*
+    Some fields may be `None`, which happens when a processor doesn't support energy metrics for that field. On M1 chips, for instance, DRAM, ANE, and GPU SRAM results may not be available. On newer machines (M2 and above), all fields are typically present.
 
 Alternatively, if you’re interfacing with low-level inference code directly (say, in llama.cpp), you can use the C++ version of the energy profiler, which is available as a header-only include, to tease apart energy metrics more precisely.
 
