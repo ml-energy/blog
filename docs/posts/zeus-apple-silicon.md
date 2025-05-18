@@ -74,14 +74,14 @@ And the output might look something like this:
 
 ```
 --- Energy ---
-CPU Total: 170552 mJ
-Efficiency cores: 488 mJ  414 mJ
-Performance cores: 16284 mJ  16570 mJ  15814 mJ  14153 mJ  21243 mJ  20917 mJ  19292 mJ  18666 mJ
-Efficiency core manager: 632 mJ
-Performance core manager: 26077 mJ
-DRAM: 25078 mJ
-GPU: 73 mJ
-GPU SRAM: 2 mJ
+CPU Total: 25602 mJ
+Efficiency cores: 267 mJ  245 mJ
+Performance cores: 5200 mJ  5268 mJ  4205 mJ  2678 mJ  1723 mJ  538 mJ  739 mJ  332 mJ
+Efficiency core manager: 301 mJ
+Performance core manager: 4104 mJ
+DRAM: 16347 mJ
+GPU: 81962 mJ
+GPU SRAM: 4 mJ
 ANE: 0 mJ
 ```
 
