@@ -2,6 +2,7 @@
 date: 2025-05-17
 authors:
   - michahn01
+  - jaywonchung
 categories:
   - energy
   - measurement
@@ -16,23 +17,35 @@ If you want to see how much energy LLM inference consumes on Apple Silicon, it's
 
 <!-- more -->
 
-The main tool available is a built-in macOS CLI utility called `powermetrics`, which prints energy metrics to output at set time intervals. However, it's annoying to use this *programmatically* (e.g., for precisely teasing apart energy consumption by different parts of code), since it measures and reports energy over set time intervals (e.g., 500 ms) instead of at arbitrary start/end points in your code. You would also need to parse the output of the tool yourself in a background thread or process.
+The main tool available is a built-in macOS CLI utility called `powermetrics`, which prints energy metrics to output at set time intervals. However, it's annoying to use this *programmatically* (e.g., for precisely teasing apart energy consumption by different parts of code), because:
 
-So, to make this easier, we built [zeus-apple-silicon](https://github.com/ml-energy/zeus-apple-silicon), a very small library designed specifically for energy profiling on Apple Silicon.
+1. It requires `sudo`
+1. It measures and reports energy over set time intervals (e.g., 500 ms) instead of at arbitrary start/end points in your code
+1. You have to parse the output of the tool yourself in a background thread or process.
 
-Our hope with this library was to make something more straightforward to use -- it allows you to measure energy over any arbitrary block of code without needing periodic parsing in background threads. As a bonus, it provides more detailed readings than powermetrics. Whereas powermetrics only provides aggregate results for CPU, GPU, and ANE, this library gives you per-core energy (each efficiency/performance core separately), DRAM energy, and so on.
+So, to make this easier, we built [zeus-apple-silicon](https://github.com/ml-energy/zeus-apple-silicon), a very small C++/Python library designed specifically for energy profiling on Apple Silicon.
 
-The library is written/available in C++, but it’s importable as a Python package via bindings. So, if you just want to know how much energy it takes to prompt a model, it can be as simple as:
+Our hope with this library was to make something more straightforward to use -- it allows you to measure energy over any arbitrary block of code without needing periodic parsing in background threads. As a bonus, it provides more detailed readings than `powermetrics`. Whereas `powermetrics` only provides aggregate results for CPU, GPU, and ANE, this library gives you per-core energy (each efficiency/performance core separately), DRAM energy, and so on.
+
+The library is written/available in C++, but it’s importable as a Python package via bindings.
+It can be installed with:
+
+```bash
+pip install zeus-apple-silicon
+```
+
+So, if you just want to know how much energy it takes to prompt a model, it can be as simple as:
 
 ```python
-# Install via `pip install zeus-apple-silicon`
+# Assumes `pip install llama-cpp-python huggingface-hub`
+
 from zeus_apple_silicon import AppleEnergyMonitor
 from llama_cpp import Llama
 
 # (1) Initialize your model
-llm = Llama(
-    model_path="./models/llama-2-7b-chat.Q4_K_M.gguf",
-    verbose=False,
+llm = Llama.from_pretrained(
+    repo_id="bartowski/Llama-3.2-3B-Instruct-GGUF",
+    filename="Llama-3.2-3B-Instruct-Q6_K.gguf",
 )
 
 # (2) Initialize energy monitor
@@ -40,36 +53,39 @@ monitor = AppleEnergyMonitor()
 
 # (3) See how much energy is consumed while generating response
 monitor.begin_window("prompt") # START an energy measurement window
-output = llm(
-    "Q: Who are you? A: ",
-    max_tokens=32,
-    stop=["Q:", "\n"],
+output = llm.create_chat_completion(
+      messages = [
+          {"role": "system", "content": "You are a helpful assistant."},
+          {"role": "user", "content": "What makes a good Python library? Answer concisely."}
+      ],
 )
 energy_metrics = monitor.end_window("prompt") # END measurement, get results
 
-text_answer = output["choices"][0]["text"]
-print(text_answer)
+print("--- Model Output ---")
+print(output["choices"][0]["message"]["content"])
 
 # (4) Print energy usage over the measured window
-print("--- Prompt Energy ---")
+print("--- Energy ---")
 print(energy_metrics)
 ```
 
-And you might see output like:
+And the output might look something like this:
 
 ```
-CPU Total: 934 mJ
-Efficiency cores: 34 mJ  34 mJ  21 mJ  14 mJ  
-Performance cores: 308 mJ  118 mJ  88 mJ  54 mJ  
-Efficiency core manager: 72 mJ
-Performance core manager: 191 mJ
-DRAM: None (unavailable)
-GPU: 20708 mJ
-GPU SRAM: None (unavailable)
-ANE: None (unavailable)
+--- Energy ---
+CPU Total: 170552 mJ
+Efficiency cores: 488 mJ  414 mJ
+Performance cores: 16284 mJ  16570 mJ  15814 mJ  14153 mJ  21243 mJ  20917 mJ  19292 mJ  18666 mJ
+Efficiency core manager: 632 mJ
+Performance core manager: 26077 mJ
+DRAM: 25078 mJ
+GPU: 73 mJ
+GPU SRAM: 2 mJ
+ANE: 0 mJ
 ```
 
-*Note: above, some fields are marked as `None (unavailable)`, which happens when a processor doesn't support energy metrics for that field. On M1 chips (like on my own machine), DRAM, ANE, and GPU SRAM results are often unavailable. On newer machines (M2 and above), all fields are typically present.*
+!!! Note
+    Some fields may be `None`, which happens when a processor doesn't support energy metrics for that field. On M1 chips (like on my own machine), DRAM, ANE, and GPU SRAM results are often unavailable. On newer machines (M2 and above), all fields are typically present.*
 
 Alternatively, if you’re interfacing with low-level inference code directly (say, in llama.cpp), you can use the C++ version of the energy profiler, which is available as a header-only include, to tease apart energy metrics more precisely.
 
@@ -98,6 +114,9 @@ while ( /* inference not finished */ ) {
 
 And this measurement would give you insight into the energy consumption per batch or token, ignoring one-time costs like model loading or context initialization.
 
+!!! Tip
+    You can obtain `apple_energy.hpp` from the [zeus-apple-silicon GitHub repository](https://github.com/ml-energy/zeus-apple-silicon).
+
 In terms of granularity, energy readings are updated basically as fast as the processor’s energy counters are updated and passed through IOKit APIs, which is what the tool uses internally. When tested locally, updates were happening at less than 1 millisecond granularity.
 
-This library works as a standalone tool, but it was developed as part of a larger project at the University of Michigan called [Zeus](https://ml.energy/zeus/) (github: [https://github.com/ml-energy/zeus](https://github.com/ml-energy/zeus)), aimed at measuring/optimizing deep learning energy usage, particularly on GPUs. It supports NVIDIA GPUs and AMD GPUs (and Intel CPUs and some other SoCs as well) and offers optimization capabilities alongside measurement.
+This library works as a standalone tool, but it was developed as part of a larger project called [Zeus](https://ml.energy/zeus/) (GitHub: [https://github.com/ml-energy/zeus](https://github.com/ml-energy/zeus)), aimed at measuring/optimizing deep learning energy usage, particularly on GPUs. It offers the same window-based measurement API like `zeus-appl-silicon`, but supports broader hardware like NVIDIA and AMD GPUs, CPUs (mostly), DRAM (mostly), Apple Silicon, and NVIDIA Jetson platforms, and offers automated energy optimizers for Deep Learning scenarios alongside measurement.
