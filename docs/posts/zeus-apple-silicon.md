@@ -98,6 +98,6 @@ while ( /* inference not finished */ ) {
 
 And this measurement would give you insight into the energy consumption per batch or token, ignoring one-time costs like model loading or context initialization.
 
-In terms of granularity, energy readings are updated basically as fast as the processor’s energy counters are updated and passed through IOKit APIs, which is what the tool uses internally. When I tested this locally, updates were happening at less than 1 millisecond granularity.
+In terms of granularity, energy readings are updated basically as fast as the processor’s energy counters are updated and passed through IOKit APIs, which is what the tool uses internally. When tested locally, updates were happening at less than 1 millisecond granularity.
 
 This library works as a standalone tool, but it was developed as part of a larger project at the University of Michigan called [Zeus](https://ml.energy/zeus/) (github: [https://github.com/ml-energy/zeus](https://github.com/ml-energy/zeus)), aimed at measuring/optimizing deep learning energy usage, particularly on GPUs. It supports NVIDIA GPUs and AMD GPUs (and Intel CPUs and some other SoCs as well) and offers optimization capabilities alongside measurement.
