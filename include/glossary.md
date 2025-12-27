@@ -1,0 +1,5 @@
+*[token]: LLMs understand and generate text in units of "tokens," which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.
+*[tokens]: LLMs understand and generate text in units of "tokens," which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.
+*[ITL]: Inter-Token Latency. The time between receiving subsequent tokens in the response.
+*[Mixture-of-Experts]: A particular architecture for large language models where the MLP component is replaced with multiple smaller "expert" MLPs. During the forward pass, only a subset of these experts (proportion is fixed) are chosen to process that input. Compared to dense (non-MoE) models with the same total number of parameters, MoE models therefore run fewer computations per input.
+*[TDP]: Thermal Design Power. The maximum amount of average power draw by a computing device (e.g., GPU). This is not the same as the maximum power draw, which can be higher for short bursts.
