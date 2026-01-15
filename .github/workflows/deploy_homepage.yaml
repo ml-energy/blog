@@ -4,6 +4,9 @@ on:
     branches:
       - master
 
+env:
+  SITE_ANALYTICS: google
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

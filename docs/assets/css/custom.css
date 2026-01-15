@@ -23,3 +23,26 @@ a.autorefs-external::after, a.external::after {
 a.autorefs-external:hover::after, a.external:hover::after {
   background-color: var(--md-accent-fg-color);
 }
+
+/* Make section headings stand out */
+.md-typeset h1, .md-typeset h2, .md-typeset h3 {
+  color: var(--md-primary-fg-color);
+}
+.md-typeset h2 {
+  border-left: 3px solid var(--md-primary-fg-color--light);
+  padding-left: 0.3em;
+  font-weight: 400;
+}
+
+/* Center tables in posts */
+.md-typeset__scrollwrap .md-typeset__table {
+  display: table;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Make figcaption the same width as figure */
+.md-typeset figcaption {
+  max-width: none;
+  margin: 0 0.5em;
+}
