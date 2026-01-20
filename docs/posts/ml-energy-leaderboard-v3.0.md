@@ -313,7 +313,63 @@ The two H100 configurations (purple and green) are right in the middle of the B2
     H100 can still be competitive with B200 in terms of energy, especially when latency constraints are tight.
 
 
-## What About Power?
+## Reasoning about Energy Consumption
+
+In the previous sections, we presented empirical observations on energy consumption.
+Now, what do we make of these results?
+In this section, we outline core mechanisms that govern energy consumption, with the goal of providing tools to *reason about* energy consumption.
+
+### The Core Mechanisms
+
+Many factors across the whole system (hardware, software, and algorithm) affect energy consumption.
+Some of the key mechanisms trivial.
+For instance, more computation generally means more energy consumption.
+MoE models activate fewer parameters per token than dense models ([Model Size](#model-size)), FP8 reduces computation via lower-precision arithmetic ([Precision](#precision)), and diffusion models' energy scales with denoising steps and output resolution ([Diffusion Models](#diffusion-models)).
+This is why model-level efficiency improvements matter greatly.
+
+Another instance is hardware efficiency improvements over generations.
+Newer GPU architectures typically deliver more operations per joule.
+We've indeed seen that B200 generally consumes less energy than H100 for the same amount of work ([B200 versus H100](#b200-versus-h100)), though the gap varies by model and configuration.
+
+The aforementioned two mechanisms are largely about model and hardware choices.
+However, in order to understand and reason about energy consumption in real world systems, we go deeper into system-level mechanisms.
+
+### Static Power Wastage
+
+The power consumption of the GPU, which is the major energy consumer, has two components: *static power* (consumed regardless of activity) and *dynamic power* (reflects compute and memory activity).
+When the GPU is underutilized, static power is consumed during that time period anyway, wasting energy and reducing energy efficiency for the same amount of work.
+Therefore, higher GPU utilization leads to lower energy for the same amount of work.
+
+One of the most critical factors in GPU utilization is actually not the GPU, but the rest of the system.
+That is, the GPU should be the bottleneck, not other system components.
+When CPU preprocessing, network communication, or other overheads limit throughput, the GPU sits idle waiting, wasting static power.
+
+We saw this with multimodal LLMs ([Multimodal LLM](#multimodal-llm)): CPU-side vision preprocessing became a bottleneck that limited batch size, leaving GPU memory underutilized despite having capacity for more concurrent requests.
+The result was higher energy per token—not because of the GPU, but because of the surrounding system.
+
+This has practical implications: upgrading to a faster GPU without addressing system bottlenecks may actually *worsen* energy per output, as the more powerful GPU spends even more time waiting and wasting static power.
+
+
+### Time-Energy Tradeoff Frontier
+
+As we have seen, there are cases where there is a time--energy tradeoff frontier for the same amount of work.
+When the GPU *is* the bottleneck—the ideal case, we can navigate the time-energy tradeoff frontier through configuration choices.
+Which point on the frontier we can choose depends on application-level requirements; it could be latency deadlines for energy budgets.
+
+For many ML applications, batch size is one of the most important lever.
+Especially for LLM decode, larger batches increase arithmetic intensity, improving utilization and reducing energy per token ([Batch Size](#batch-size)).
+However, batch size is constrained by two factors:
+
+- **Memory capacity:** Larger batches require more memory for activations and KV cache for LLMs. When GPU memory is exhausted, we hit a ceiling. This is why models with longer outputs achieve lower maximum batch sizes ([LLM](#llm)).
+- **Latency requirements:** Larger batches increase per-request latency. Strict latency constraints may force smaller batch sizes than what would minimize energy.
+
+Many configurations alter the time-energy tradeoff frontier itself, and [Multi-GPU Scaling](#multi-gpu-scaling) is a prime example.
+Adding GPUs increases aggregate memory capacity, potentially enabling larger batch sizes that weren't previously possible ([Multi-GPU Scaling](#multi-gpu-scaling)).
+But this only helps if the single-GPU configuration was memory-limited.
+Otherwise, additional GPUs just add communication overhead without enabling better configurations.
+
+
+### Power and Energy
 
 We've briefly touched on what happens to GPU power draw when we change batch size [earlier](#batch-size); it generally increases with batch size as the GPU is more fully utilized.
 Is that all there is for power?
@@ -343,8 +399,9 @@ Thus, optimizing energy consumption for the given work improves throughput per w
 As batch size increases, energy per token decreases and throughput per watt increases, both eventually plateauing as the GPU reaches saturation.
 
 !!! Takeaway
-    Throughput per watt is an important metric in power-constrained datacenters, which determines service capacity.
-    It is mathematically the inverse of energy consumption per fixed amount of work, so optimizing for energy improves throughput per watt.
+    Energy consumption is governed by four mechanisms: computation amount, hardware efficiency, GPU utilization, and the time-energy tradeoff frontier.
+    System design choices—eliminating non-GPU bottlenecks and navigating the frontier via batch size and memory capacity—are key levers for optimization.
+    Throughput per watt is the inverse of energy per output; optimizing one optimizes the other.
 
 
 ## Summing Up
