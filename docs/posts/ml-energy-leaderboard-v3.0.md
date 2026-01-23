@@ -52,13 +52,13 @@ Therefore, Problem Solving responses consume on average 25x more energy than Tex
 **Case study on Qwen 3 32B on 1x B200.**
 Qwen 3 32B supports both reasoning mode and non-reasoning mode, allowing direct comparison of energy consumption for the same model on different tasks.
 
-| Metric | Problem Solving | Text Conversation | Ratio |
-|--------|----------------:|------------------:|-------|
-| Max batch size | 128 | 512 | 4x lower |
-| Average output tokens | 7,035 | 627 | 11x more |
-| Energy/token @ batch size 128 | 0.312 J | 0.209 J | 1.5x higher |
-| Energy/token @ max batch size | 0.312 J | 0.151 J | 2.1x higher |
-| Energy/response | 2,192 J | 95 J | 23x more |
+| Metric | Text Conversation | Problem Solving | Ratio |
+|--------|------------------:|----------------:|-------|
+| Max batch size | 512 | 128 | 4x lower |
+| Average output tokens | 627 | 7,035 | 11x more |
+| Energy/token @ batch size 128 | 0.209 J | 0.312 J | 1.5x higher |
+| Energy/token @ max batch size | 0.151 J | 0.312 J | 2.1x higher |
+| Energy/response | 95 J | 2,192 J | 23x more |
 
 Longer output sequences in Problem Solving increases KV cache size, preventing the server from running larger batch sizes.
 Therefore, when we compare energy per token at each task's maximum batch size, Problem Solving is 2.1x higher.
@@ -81,7 +81,7 @@ Multimodal LLMs (MLLMs) takes images and/or videos alongside text as input and g
 <figure markdown>
   ![MLLM energy by modality](assets/ml-energy-leaderboard-v3.0/section1-2-mllm-light.svg#only-light)
   ![MLLM energy by modality](assets/ml-energy-leaderboard-v3.0/section1-2-mllm-dark.svg#only-dark)
-  <figcaption>Energy per token by input modality (left), and Qwen 3 (VL) 8B batch size and GPU KV cache utilization (right) on B200. Minimum-energy configurations are used.</figcaption>
+  <figcaption>Energy per token by input modality (left), and Qwen 3 (VL) 8B batch size and GPU KV cache utilization (right) on B200. The Text modality uses the text-only model (e.g., Qwen 3 8B), whereas Image and Video use the Vision Language variant (e.g., Qwen 3 VL 8B). Minimum-energy configurations are used.</figcaption>
 </figure>
 
 **Multimodality can increase energy.**
@@ -95,15 +95,15 @@ Indeed, when we compare minimum-energy configurations for the same model family 
 
 **Case study on Qwen 3 (VL) 8B on 1x B200.**
 We're comparing Qwen 3 8B on Text Conversation with Qwen 3 VL 8B on Image Chat and Video Chat.
-For this smaller model, the overheads of vision encoders and CPU-side preprocessing limit batch size significantly and underutilizes the GPU.
+For this smaller model, the overheads of vision encoders and CPU-side preprocessing limiting batch size significantly and underutilizes the GPU.
 Especially, video inputs typically get converted to more vision tokens and are more expensive to preprocess from the CPU-side, which shows from the much smaller batch size and higher energy per token.
 The drop in GPU KV cache utilization as vision preprocessing overhead grows larger confirms that GPU memory had capacity to spare longer prompts from vision tokens, but CPU-side vision preprocessing became a severe bottleneck that limited batch size.
 
 All in all, this is a case where GPU energy consumption is not just about the GPU; the entire system and where the bottlenecks are matter a lot.[^gpu-multimodal-processing]
 If CPU-side processing speed is similar and just the GPU is upgraded, GPUs will only be more underutilized.
+In subsequent analyses, we do not include MLLMs because CPU-side bottlenecks make it difficult to isolate factors that impact GPU energy consumption.
 
 [^mllm-task-output-length]: One caveat of this cross-modality comparison is that, as we have seen in the LLM section, different tasks can have different output lengths that affect energy per token. For the models we compared, Text Conversation, Image Chat, and Video Chat have average output lengths of 808, 944, and 392 tokens, respectively. This isn't as large as the difference between Text Conversation and Problem Solving and shouldn't affect energy per token as much as that case, but Video Chat's shorter output length (which allows requests to finish faster and reduces batch size when the CPU is the bottleneck) may have increased energy per token compared to Image Chat and Text Conversation.
-
 [^gpu-multimodal-processing]: There are some proposals to run vision preprocessing on the GPU itself (e.g., [vLLM #21995](https://github.com/vllm-project/vllm/issues/21995)), which can alleviate CPU-side bottlenecks but instead shift compute more to the GPU, which will likely introduce its own interesting tradeoffs.
 
 !!! Takeaway
@@ -151,7 +151,7 @@ Increasing batch size reduces energy per token by 3-5x, but it's not free.
 <figure markdown>
   ![Batch size effect](assets/ml-energy-leaderboard-v3.0/section2-1-batch-size-light.svg#only-light)
   ![Batch size effect](assets/ml-energy-leaderboard-v3.0/section2-1-batch-size-dark.svg#only-dark)
-  <figcaption>Scaling trends of energy per token, token generation throughput, median ITL, and power draw with increasing batch size. Metrics normalized to % of maximum, except power which is normalized to % of GPU TDP (1000W per B200).</figcaption>
+  <figcaption>Scaling trends of energy per token, token generation throughput, median ITL, and power draw with increasing batch size for DeepSeek R1 Problem Solving (left) and Qwen 3 Coder 30B A3B on Code Completion (right). Metrics normalized to % of maximum, except power which is normalized to % of GPU TDP (1000W per B200).</figcaption>
 </figure>
 
 GPUs achieve peak efficiency when fully utilized; small batches leave compute units idle and waste static energy consumption, and larger batches amortize fixed costs (e.g., memory transfers) across more work.
@@ -163,7 +163,11 @@ Latency (median ITL in this analysis) increases with batch size, as there is str
 Throughput also increases with batch size, but with diminishing returns as GPU utilization reaches saturation.[^latency-and-throughput]
 Finally, power draw increases with batch size, as the GPU's compute and memory capacity are more fully utilized and actively doing work.
 
-[^latency-and-batch-size]: For very small batch sizes, LLM weight loading latency will dominate, so increasing batch size may not increase latency very much.
+From energy per token trends, we can see that DeepSeek R1 (left) hasn't saturated GPU utilization even at the largest batch size that fits in memory, whereas Qwen 3 Coder 30B A3B (right) has saturated around batch size 512.
+This explains the two models' throughput trends.
+DeepSeek R1 has a linearly increasing token throughput with batch size as GPU utilization keeps improving, whereas Qwen 3 Coder 30B A3B sees diminishing returns as it approaches saturation.
+
+[^latency-and-batch-size]: For very small batch sizes, LLM weight loading time dominates model inference latency, so increasing batch size may not increase latency very much even though there is more work to do.
 [^latency-and-throughput]: Depending on the model, the GPU's memory capacity may reach saturation before compute utilization, and throughput gains will not diminish as quickly.
 
 !!! Takeaway
