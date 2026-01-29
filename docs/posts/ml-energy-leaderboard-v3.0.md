@@ -31,84 +31,81 @@ For diffusion models, a response is one generated image or video.
 
 ### LLM
 
-For LLMs, energy per response is simply energy per token multiplied by the number of output tokens.
-The number of output tokens varies significantly by the model and task type.
-
 **Task type heavily influences output length.**
-Different tasks naturally produce different output lengths (number of output tokens).
+LLM time and energy consumption is dominated by the decoding (token generation) phase.
+Different tasks naturally produce different distributions of output lengths.
 This is particularly pronounced between two LLM tasks in our benchmark: Problem Solving (reasoning on) and Text Conversation (reasoning off).
 
 <figure markdown>
   ![Energy and output length distributions](assets/ml-energy-leaderboard-v3.0/section1-1-llm-light.svg#only-light)
   ![Energy and output length distributions](assets/ml-energy-leaderboard-v3.0/section1-1-llm-dark.svg#only-dark)
-  <figcaption>Distribution of output length, energy per token, and energy per response across models. Each data point is the model's minimum-energy configuration on B200 GPUs.</figcaption>
+  <figcaption>Distribution of (a) number of output tokens, (b) energy per token, and (c) energy per response across all models on B200 GPUs using their respective minimum-energy configurations.</figcaption>
 </figure>
 
-Here, we're comparing the minimum-energy configuration of each model on B200 GPUs, which allows us to focus on model and task differences without being confounded by hardware utilization differences.
-Problem Solving on average generates 10x more output tokens than Text Conversation (mean 6,988 vs. 717).
-On top of this, longer output sequences stress memory capacity and prevent larger batch sizes, which increases energy per token due to lower GPU utilization.
-Therefore, Problem Solving responses consume on average 25x more energy than Text Conversation (mean 4,625 J vs. 184 J).
+Here, we're comparing the minimum-energy configuration[^minimum-energy-config] of each model on B200 GPUs, which allows us to focus on model and task differences without being confounded by hardware utilization differences.
+Problem Solving generates on average 10x more output tokens than Text Conversation (mean 6,988 vs. 717).
+Additionally, longer output sequences stress memory capacity and prevent larger batch sizes, increasing energy per token due to lower GPU utilization.
+Since energy per response is energy per token multiplied by the number of output tokens, these two factors multiply, resulting in Problem Solving consuming on average 25x more energy per response than Text Conversation (mean 4,625 J vs. 184 J).
+
+[^minimum-energy-config]: The configuration (e.g., batch size, number of GPUs) that achieves the lowest energy consumption for the model.
 
 **Case study on Qwen 3 32B on 1x B200.**
-Qwen 3 32B supports both reasoning mode and non-reasoning mode, allowing direct comparison of energy consumption for the same model on different tasks.
+Qwen 3 32B supports both reasoning and non-reasoning, enabling direct comparison on the same model.
 
 | Metric | Text Conversation | Problem Solving | Ratio |
-|--------|------------------:|----------------:|-------|
-| Max batch size | 512 | 128 | 4x lower |
-| Average output tokens | 627 | 7,035 | 11x more |
-| Energy/token @ batch size 128 | 0.209 J | 0.312 J | 1.5x higher |
-| Energy/token @ max batch size | 0.151 J | 0.312 J | 2.1x higher |
-| Energy/response | 95 J | 2,192 J | 23x more |
+|--------|------------------:|----------------:|------:|
+| Max batch size (BS) | 512 | 128 | 0.25x |
+| Mean output tokens | 627 | 7,035 | 11x |
+| Energy/token @ BS 128 | 0.209 J | 0.312 J | 1.5x |
+| Energy/token @ max BS | 0.151 J | 0.312 J | 2.1x |
+| Energy/response | 95 J | 2,192 J | 23x |
 
-Longer output sequences in Problem Solving increases KV cache size, preventing the server from running larger batch sizes.
+Longer output sequences in Problem Solving increase the amount of KV cache memory usage per response, preventing larger batch sizes.
 Therefore, when we compare energy per token at each task's maximum batch size, Problem Solving is 2.1x higher.
-Even at the same batch size 128, longer sequences consumes more energy per token due to higher memory footprint.
-Finally, combining longer outputs and higher energy per token results in 23x more energy per response for Problem Solving.
-
-We do want to note that one factor we're not comparing here is the number of input/prompt tokens (mean 634 vs. 224).
-While there is a difference, both are not considered very long input sequences, and we do not expect this to have visible effect, particularly when inference iterations are entirely dominated by decode rather than prefill.
+Even at the same batch size (128), longer sequences consume more energy per token due to higher memory footprint.
+Finally, combining longer outputs and higher energy per token results in 23x energy per response for Problem Solving for this model.
 
 !!! Takeaway
     Task type heavily influences energy consumption.
-    Notably, Problem Solving uses on average 25x more energy per response than Text Conversation.
-    This comes from 10x more output tokens combined with higher energy per token due to memory pressure from long sequences.
+    Notably, Problem Solving (reasoning) uses on average 25x more energy per response than Text Conversation.
+    This comes from 10x more output tokens combined with higher energy per token due to memory pressure limiting batch size.
 
 
 ### Multimodal LLM
 
-Multimodal LLMs (MLLMs) takes images and/or videos alongside text as input and generates text responses.
+Multimodal LLMs (MLLMs) take images and/or videos alongside text as input and generate text responses.
 
 <figure markdown>
   ![MLLM energy by modality](assets/ml-energy-leaderboard-v3.0/section1-2-mllm-light.svg#only-light)
   ![MLLM energy by modality](assets/ml-energy-leaderboard-v3.0/section1-2-mllm-dark.svg#only-dark)
-  <figcaption>Energy per token by input modality (left), and Qwen 3 (VL) 8B batch size and GPU KV cache utilization (right) on B200. The Text modality uses the text-only model (e.g., Qwen 3 8B), whereas Image and Video use the Vision Language variant (e.g., Qwen 3 VL 8B). Minimum-energy configurations are used.</figcaption>
+  <figcaption>(a) shows three models from the Qwen 3 family across three modalities (minimum-energy configurations), and (b) shows how modality affects batch size and KV cache utilization for the 8B model, showing why energy per token increases. Text modality uses the text-only model (e.g., Qwen 3 8B), whereas Image and Video use the vision-language variant (e.g., Qwen 3 VL 8B).</figcaption>
 </figure>
 
 **Multimodality can increase energy.**
 The implications of multimodal inputs are threefold:
 
-1. The model needs to run its vision encoder to convert them into vision tokens, which can sometimes increase input length significantly and increase computation and memory usage.
-2. In GPU memory-constrained scenarios, the memory consumption of the vision encoders (weight and activation) can further limit batch size.
-3. The input image or video needs to be preprocessed first on the CPU-side (e.g., converting raw image/video into tiles of pixels), which can take non-negligible time and become a bottleneck that limits batch size.
+1. Models run their modality encoder to convert inputs into multimodal tokens, which increases computation and memory operations and therefore energy consumption.
+2. In GPU memory-constrained scenarios, the modality encoder and the increase in input length increase memory usage, which can limit batch size.
+3. Multimodal inputs need to be preprocessed first on the CPU-side (e.g., converting raw image/video into tiles of pixels), which can take non-negligible time and become a bottleneck that further limits batch size.
 
-Indeed, when we compare minimum-energy configurations for the same model family fixing the GPU model and number of GPUs, processing images uses 1.1-5.2x the energy per token of text, while video uses 1.3-15.0x.[^mllm-task-output-length]
+Indeed, when we compare minimum-energy configurations for different modalities, text + image inputs use 1.1-5.2x the energy per token of text, while text + video inputs use 1.3-15.0x.[^mllm-task-output-length]
 
 **Case study on Qwen 3 (VL) 8B on 1x B200.**
-We're comparing Qwen 3 8B on Text Conversation with Qwen 3 VL 8B on Image Chat and Video Chat.
-For this smaller model, the overheads of vision encoders and CPU-side preprocessing limiting batch size significantly and underutilizes the GPU.
-Especially, video inputs typically get converted to more vision tokens and are more expensive to preprocess from the CPU-side, which shows from the much smaller batch size and higher energy per token.
-The drop in GPU KV cache utilization as vision preprocessing overhead grows larger confirms that GPU memory had capacity to spare longer prompts from vision tokens, but CPU-side vision preprocessing became a severe bottleneck that limited batch size.
+We compare Qwen 3 8B on Text Conversation with Qwen 3 VL 8B on Image Chat and Video Chat tasks.
+For this smaller 8B model, the overheads of vision encoders and CPU-side preprocessing limit batch size significantly and underutilize the GPU.
+In particular, video inputs typically get converted to more vision tokens and are more expensive to preprocess on the CPU side, as shown by the much smaller batch size and higher energy per token.
+The drop in KV cache utilization as vision preprocessing overhead grows confirms that GPU memory was not the limiting factor---there was spare capacity for more tokens---but CPU-side vision preprocessing became a severe bottleneck that limited batch size.
 
-All in all, this is a case where GPU energy consumption is not just about the GPU; the entire system and where the bottlenecks are matter a lot.[^gpu-multimodal-processing]
-If CPU-side processing speed is similar and just the GPU is upgraded, GPUs will only be more underutilized.
-In subsequent analyses, we do not include MLLMs because CPU-side bottlenecks make it difficult to isolate factors that impact GPU energy consumption.
+All in all, this is a case where GPU energy consumption is not just about the GPU; the entire system and the location of bottlenecks matter.[^gpu-multimodal-processing]
+If CPU-side processing speed remains unchanged and only the GPU is upgraded, the GPU will only be more underutilized.
+In subsequent analyses, we do not include MLLMs because CPU-side bottlenecks make it difficult to isolate factors that impact GPU energy.
 
 [^mllm-task-output-length]: One caveat of this cross-modality comparison is that, as we have seen in the LLM section, different tasks can have different output lengths that affect energy per token. For the models we compared, Text Conversation, Image Chat, and Video Chat have average output lengths of 808, 944, and 392 tokens, respectively. This isn't as large as the difference between Text Conversation and Problem Solving and shouldn't affect energy per token as much as that case, but Video Chat's shorter output length (which allows requests to finish faster and reduces batch size when the CPU is the bottleneck) may have increased energy per token compared to Image Chat and Text Conversation.
 [^gpu-multimodal-processing]: There are some proposals to run vision preprocessing on the GPU itself (e.g., [vLLM #21995](https://github.com/vllm-project/vllm/issues/21995)), which can alleviate CPU-side bottlenecks but instead shift compute more to the GPU, which will likely introduce its own interesting tradeoffs.
 
 !!! Takeaway
-    Multimodal inputs cost 1.1-5.2x (image) and 1.3-15.0x (video) the energy per token of text at the same GPU count.
-    CPU-side vision preprocessing is a bottleneck that reduces batch size and increases energy per token.
+    Multimodal inputs cost 1.1-5.2x (image) and 1.3-15.0x (video) the energy per token of text.
+    CPU-side vision preprocessing can be a bottleneck that reduces batch size and increases energy per token.
 
 
 ### Diffusion Models
@@ -123,17 +120,17 @@ Diffusion is where model size is not the best predictor of energy consumption du
 </figure>
 
 **Text-to-image varies 20x across models.**
-Models and runtime parameters range from 0.6B to 12B parameters and 20-50 denoising steps.
-Notably, Hunyuan-DiT 1.2 (1.5B parameters) consumes more energy than SD 3.5 Large (8.1B parameters) despite having fewer parameters, due in large part to running 50 denoising steps versus 28.
+Models range from 0.6B to 12B parameters with 20-50 denoising steps.
+Notably, Hunyuan-DiT 1.2 (1.5B) consumes more energy than SD 3.5 Large (8.1B) despite fewer parameters, largely due to running 50 vs. 28 denoising steps.
 
 **Text-to-video can be very energy intensive.**
-Generating a single video consumes 26 kJ to 1.16 MJ; one to two orders of magnitude more energy than images.
-Regarding factors, output resolution and frame count are also important in video generation.
-CogVideoX 1.5 5B uses more energy than Wan 2.1 14B despite being a smaller model, largely because it generates at higher resolution (768x1360 vs 480x832).
-HunyuanVideo stands out at an extreme 1.16 MJ because it generates 129 frames at a resolution of 720p, which is significantly more total pixels than Wan 2.1 14B (which generates 81 frames at 480p), resulting in 4x higher energy despite similar model sizes (13B vs 14B).
+Generating a single video consumes 26 kJ to 1.16 MJ---one to two orders of magnitude more than images.
+CogVideoX 1.5 5B uses more energy than Wan 2.1 14B despite being smaller, largely because it generates at higher resolution (768x1360 vs. 480x832).
+HunyuanVideo reaches 1.16 MJ because it generates 129 frames at 720p, resulting in 4x higher energy than Wan 2.1 14B (13B vs. 14B).
 
-For all models, we used their default runtime parameters.
-It's worth noting that many of these runtime parameters are **controllable by users** (e.g., number of denoising steps, output resolution), and allows users to navigate the time-energy-quality tradeoff space.
+We used default runtime parameters (denoising steps, resolution, frames) for all models.
+Many of these parameters are **controllable by users**, enabling navigation of the time-energy-quality tradeoff space.
+We explored this in a previous benchmark release.
 
 !!! Takeaway
     Diffusion model energy depends on more than model size: number of denoising steps, output resolution, and frame count matter as much or more.
@@ -142,132 +139,143 @@ It's worth noting that many of these runtime parameters are **controllable by us
 
 ## Deeper Dive into Energy
 
-Let's dive deeper into the factors that affect energy consumption.
+In this section, we measure and observe how different factors affect energy consumption.
 
 ### Batch Size
-
-Increasing batch size reduces energy per token by 3-5x, but it's not free.
 
 <figure markdown>
   ![Batch size effect](assets/ml-energy-leaderboard-v3.0/section2-1-batch-size-light.svg#only-light)
   ![Batch size effect](assets/ml-energy-leaderboard-v3.0/section2-1-batch-size-dark.svg#only-dark)
-  <figcaption>Scaling trends of energy per token, token generation throughput, median ITL, and power draw with increasing batch size for DeepSeek R1 Problem Solving (left) and Qwen 3 Coder 30B A3B on Code Completion (right). Metrics normalized to % of maximum, except power which is normalized to % of GPU TDP (1000W per B200).</figcaption>
+  <figcaption>Energy per token, throughput, median ITL, and power trends against batch size for (a) DeepSeek R1 (Problem Solving) on 8x B200 and (b) Qwen 3 Coder 30B A3B (Code Completion) on 1x B200. Metrics normalized to % of maximum, except power which is normalized to % of GPU TDP.</figcaption>
 </figure>
 
-GPUs achieve peak efficiency when fully utilized; small batches leave compute units idle and waste static energy consumption, and larger batches amortize fixed costs (e.g., memory transfers) across more work.
-Therefore, as batch size increases, energy per token drops sharply at first, then plateaus.
-Batch size is hard-capped by GPU memory capacity.
+The figure above shows the impact of batch size on energy per token, token generation throughput, median Inter-Token Latency (ITL), and GPU power draw.
+Computing hardware typically achieves peak energy efficiency when fully utilized (the [Static Power Wastage](#static-power-wastage) section will go deeper into this).
+Therefore, as batch size increases, energy per token drops at first, then plateaus as GPU utilization approaches saturation.
 
-The energy efficiency gains of increasing batch size is not without tradeoffs.
-Latency (median ITL in this analysis) increases with batch size, as there is strictly more work to do for each batch.[^latency-and-batch-size]
-Throughput also increases with batch size, but with diminishing returns as GPU utilization reaches saturation.[^latency-and-throughput]
-Finally, power draw increases with batch size, as the GPU's compute and memory capacity are more fully utilized and actively doing work.
+However, the energy efficiency gains of increasing batch size are not without tradeoffs.
+Latency (median ITL in this analysis) increases with batch size, as there is strictly more work to do for each batch.
+Throughput also increases with batch size, but with diminishing returns as GPU utilization reaches saturation.
+Finally, power draw increases with batch size, as a larger portion of the GPU's compute and memory circuitry is actively utilized and drawing power.
 
-From energy per token trends, we can see that DeepSeek R1 (left) hasn't saturated GPU utilization even at the largest batch size that fits in memory, whereas Qwen 3 Coder 30B A3B (right) has saturated around batch size 512.
-This explains the two models' throughput trends.
-DeepSeek R1 has a linearly increasing token throughput with batch size as GPU utilization keeps improving, whereas Qwen 3 Coder 30B A3B sees diminishing returns as it approaches saturation.
-
-[^latency-and-batch-size]: For very small batch sizes, LLM weight loading time dominates model inference latency, so increasing batch size may not increase latency very much even though there is more work to do.
-[^latency-and-throughput]: Depending on the model, the GPU's memory capacity may reach saturation before compute utilization, and throughput gains will not diminish as quickly.
+From energy per token trends, we can see that DeepSeek R1 has not saturated GPU utilization even at the largest batch size that fits in memory, whereas Qwen 3 Coder approaches saturation around batch size 512.
+This explains the two models' throughput trends as well: DeepSeek R1 has a linearly increasing token throughput with batch size as GPU utilization keeps improving, whereas Qwen 3 Coder sees diminishing returns as it approaches saturation.
+We can see that these metrics move in tandem rather than in isolation, because they are all heavily coupled with latent factors like GPU utilization.
 
 !!! Takeaway
-    Increasing batch size increases latency, power, and throughput, and can unlock 3-5x energy per token reduction.
+    Increasing batch size increases latency, power, and throughput, but can unlock 3-5x energy per token reduction.
 
 
-### Model Size
+### Model Size and Architecture
 
-With the Mixture-of-Experts (MoE) architecture, the total number of parameters is less of a determinant of energy consumption; the number of *active* parameters is important.
+With the Mixture-of-Experts (MoE) architecture, the number of active parameters is as important as the total number of parameters in energy consumption.
 
 <figure markdown>
   ![MoE energy efficiency](assets/ml-energy-leaderboard-v3.0/section2-2-model-size-light.svg#only-light)
   ![MoE energy efficiency](assets/ml-energy-leaderboard-v3.0/section2-2-model-size-dark.svg#only-dark)
-  <figcaption>Energy per token by active parameters for Qwen 3 model variants on B200 (Problem Solving task, minimum-energy configuration).</figcaption>
+  <figcaption>Energy/token by active parameters of Problem Solving models with the minimum-energy configuration on B200 GPUs.</figcaption>
 </figure>
 
-Within the Qwen 3 model family, we compare two MoE variants, 30B A3B (30B total, 3B active) and 235B A22B (235B total, 22B active), and three dense variants, 8B, 14B, and 32B.
-For dense models, energy per token increases with model size (total number of parameters).
-However, when we throw in MoE models, we see that their energy per token is much lower than what a dense model of similar total size would consume.
-For instance, the energy per token of Qwen 3 30B A3B is 3.56x lower than that of Qwen 3 32B, despite having a similar total number of parameters.
-Qwen 3 235B A22B consumes more energy than 32B as it needs to use more GPUs to fit all parameters in GPU memory, but still far less than what a dense 235B model would.
+The figure above compares models from the Qwen 3 family on the Problem Solving task using B200 GPUs: two MoE variants (30B A3B and 235B A22B) and three dense variants (8B, 14B, and 32B).
+For dense models, energy per token increases with the total number of parameters.
+However, when we include MoE models, we see that their energy per token is much lower than what a dense model of similar total number of parameters would consume.
+For instance, the energy per token of 30B A3B is 3.56x lower than that of 32B, despite having a similar total number of parameters.
+However, this is not to say that active parameters are now the only factor.
+235B A22B consumes more energy than 32B as it needs to use more GPUs to fit all parameters in GPU memory, though it is still far less than what a dense 235B model would consume.
 
 !!! Takeaway
-    MoE models consume much less energy compared to dense models of similar total number of parameters.
-    The number of active parameters is an important factor, though other factors like memory pressure also play a role.
+    MoE models consume less energy compared to dense models of similar total number of parameters, making active parameters an important property for energy consumption.
+    However, total parameters, which affect memory requirements, still play a role.
 
 
-### B200 versus H100
+### GPU Generation
 
-How much is B200 better than H100 in terms of energy?
-For each model, let's compare the minimum energy configuration on B200 against H100 that meets latency constraints.
+One way to compare GPU models (B200 vs. H100) is to pick the minimum-energy configuration on each GPU at the same latency constraint.
 
 <figure markdown>
   ![B200 vs H100](assets/ml-energy-leaderboard-v3.0/section2-3-b200-vs-h100-light.svg#only-light)
   ![B200 vs H100](assets/ml-energy-leaderboard-v3.0/section2-3-b200-vs-h100-dark.svg#only-dark)
-  <figcaption>B200 vs H100 energy comparison at matched latency constraints. Percentage of B200 energy reduction over H100 is annotated on each bar.</figcaption>
+  <figcaption>B200 vs H100 energy comparison at latency constraints of 100 ms median ITL for LLMs and 30 s generation latency for Text to Image. Percentage of B200 energy reduction is annotated.</figcaption>
 </figure>
 
-As shown in the figure, energy reduction can vary a lot by model and task.
-Sometimes it's significantly better (e.g., 82% energy per token reduction for Qwen 3 235B A22B Thinking on Problem Solving), other times it could be marginal, or, as we will see below, sometimes worse.
+Energy reduction can vary significantly by model and task.
+Sometimes it is significantly better (e.g., 82% energy per token reduction for Qwen 3 235B A22B Thinking on Problem Solving), other times marginal or even worse, as we will see below.
 
-To get a better overall picture, we also compared the two GPU models for all models with three different latency constraints (50/100/250 ms median ITL for LLMs, 10/30/60 s generation latency for text-to-image, 100/500/1000 s for text-to-video).
+To get a better overall picture, we compare the two GPU models with three different latency constraints: 50/100/250 ms median ITL for LLMs, 10/30/60 s generation latency for Text to Image, 100/500/1000 s for Text to Video.
 
-**LLM.** Across all three median ITL constraints, B200 wins 88% (63/72) of comparisons with a median 35% energy reduction (-53% to +82%).
+**LLM.**
+Across all three median ITL constraints, B200 wins 88% (63/72) of comparisons with a median 35% energy reduction (ranging from 53% more to 82% less).
 A few notable exceptions happen at tight latency constraints.
-Namely, while B200's large VRAM allows fitting large models on fewer GPUs without inter-GPU communication overhead, at tight latency constraints, using more H100 GPUs with higher degree of parallelism can be more energy efficient.
-For example, at the 50 ms constraint: Qwen 3 30B A3B Thinking uses 53% less energy on H100 (2 GPUs, batch size 128) compared to B200 (1 GPU, batch size 64), and Qwen 3 235B A22B Instruct FP8 uses 33% less energy on H100 (8 GPUs, batch size 192) compared to B200 (2 GPUs, batch size 64).
+B200's large VRAM allows fitting large models on fewer GPUs, avoiding inter-GPU communication overhead.
+However, at tight latency constraints, using more H100 GPUs with a higher degree of parallelism can be more energy efficient.
+For example, at the 50 ms constraint, Qwen 3 30B A3B Thinking uses 53% less energy on 2x H100 (batch size 128) than on 1x B200 (batch size 64).
+Similarly, Qwen 3 235B A22B Instruct FP8 uses 33% less energy on 8x H100 (batch size 192) than on 2x B200 (batch size 64).
 At relaxed constraints (> 50 ms), B200 wins as communication overhead is smaller and higher batch sizes become feasible.
-We will look deeper into multi-GPU scaling in a later section.
+We will look deeper into multi-GPU scaling in the [Multi-GPU Scaling](#multi-gpu-scaling) section.
 
-**Diffusion (Text to Image).** Across all three latency constraints, B200 wins 86% (18/21) of comparisons with a median 15% energy reduction (-4% to +23%).
-Stable Diffusion 3.5 Medium is the outlier, but still, H100 wins only by a small margin (by 4%).
+**Diffusion.**
+For Text to Image, across all three latency constraints, B200 wins 86% (18/21) of comparisons with a median 15% energy reduction (ranging from 4% more to 23% less).
+Text to Video is also similar, with B200 winning 79% (11/14) of comparisons with a median 4% energy reduction (ranging from 6% more to 8% less).
+Cases where H100 wins (e.g., Stable Diffusion 3.5 Medium) are generally when the model is small enough to comfortably fit in one H100 GPU, meaning that it will underutilize a B200.
 
-**Diffusion (Text to Video).** Across all three latency constraints, B200 wins 79% (11/14) of comparisons with a median 4% energy reduction (-6% to +8%).
-In general, we can say that B200 and H100 consume similar energy for video generation.
-B200 still provides lower latency, which matters for user experience.
+We performed matched latency constraint comparisons, but we note that B200 would be capable of delivering lower latency than H100 when energy is not a concern due to its higher compute and memory throughput.
 
 !!! Takeaway
-    B200 achieves lower energy in 79-88% of comparisons at matched latency constraints.
-    Particularly for LLMs, B200 provides a median 35% energy reduction, but with tight latency constraints, using more H100 GPUs with higher parallelism can consume less energy.
+    B200 achieves lower energy than H100 in 79-88% of comparisons at matched latency constraints.
+    For tight LLM latency constraints, H100 can sometimes consume less energy by using more GPUs with higher parallelism to reduce latency.
+    For Diffusion, B200 generally wins, unless the model is small.
 
 
 ### Precision
 
-FP8 quantization reduces model memory footprint and increases compute throughput with FP8 Tensor Cores.
-However, it also adds overhead from the extra operations like dequantization/rescaling.
-We see that this tradeoff plays out differently at different batch sizes.
+FP8 quantization reduces model memory footprint and allows inference to leverage FP8 Tensor Cores with higher compute throughput.
+However, it also adds overhead from extra operations like input/activation quantization, dequantization, and scaling.
+We observe this tradeoff playing out differently at different batch sizes.
 
 <figure markdown>
   ![Precision comparison](assets/ml-energy-leaderboard-v3.0/section2-4-precision-light.svg#only-light)
   ![Precision comparison](assets/ml-energy-leaderboard-v3.0/section2-4-precision-dark.svg#only-dark)
-  <figcaption>FP8 loses at batch size 8-16, then wins at batch sizes from 32. The dashed vertical lines mark the crossover point.</figcaption>
+  <figcaption>Qwen 3 235B A22B (Text Conversation) on 8x H100. FP8 loses at batch size 8-16, then wins at batch sizes from 32. The dashed vertical lines mark the crossover point.</figcaption>
 </figure>
 
-**FP8 wins at large batch sizes.**
-When we compare models with official weights in both BF16 and FP8 on the same GPU model, number of GPUs, and batch size (excluding the Qwen 3 Coder 480B A35B case discussed below), we see the following:
+**FP8 wins at larger batch sizes.**
+The figure above shows the energy per token and median ITL of Qwen 3 235B A22B (Text Conversation) on 8x H100 in both BF16 and FP8 across batch sizes.
+At smaller batch sizes, FP8 loses on both energy and latency due to (1) the overhead of extra operations (especially those that have not been fused into matrix multiplication), and (2) underutilization of the GPU, which prevents FP8 from leveraging its compute throughput advantage.
+If we compare FP8 and BF16 for all other models and tasks, we see a similar trend:
 
-- **Batch size 8-16:** FP8 wins 0/7 on energy (median +30%, range +13% to +56%), 1/7 on latency (median +7%, range -5% to +26%)
-- **Batch size 17-64:** FP8 wins 6/13 on energy (median +1%, range -12% to +32%), 11/13 on latency (median -12%, range -23% to +12%)
-- **Batch size 65-256:** FP8 wins 11/12 on energy (median -11%, range -29% to +0%), 11/12 on latency (median -11%, range -18% to +3%)
+<center><b>Energy</b></center>
+
+| Batch size | FP8 wins | Range | Median |
+|:-----------|:---------|:------|:-------|
+| 8-16 | 0/7 | +13 to +56% | +30% |
+| 17-64 | 6/13 | -12 to +32% | +1% |
+| 65-256 | 11/12 | -29 to 0% | -11% |
+
+<center><b>Latency</b></center>
+
+| Batch size | FP8 wins | Range | Median |
+|:-----------|:---------|:------|:-------|
+| 8-16 | 1/7 | -5 to +26% | +7% |
+| 17-64 | 11/13 | -23 to +12% | -12% |
+| 65-256 | 11/12 | -18 to +3% | -11% |
 
 At batch size 8-16, FP8 has higher energy (up to 56% more) and higher latency (up to 26% slower).
-The dequantization and rescaling overhead does not get amortized well at small batch sizes, leading to higher time and energy.
-As we grow the batch size, FP8's energy advantage comes more gradually at relatively larger batch sizes than latency.
-This is, at least in part, because GPUs are capable of delivering more FP8 compute throughput than BF16 and at the same batch size, FP8 underutilizes the GPU more, leading to higher energy consumption until batch size is large enough to saturate the GPU.
+As we grow batch size, we see FP8 starting to win on latency earlier, and then on energy as well.
+This is, at least in part, because GPUs are capable of delivering more theoretical FP8 compute throughput than BF16.
+Thus, at the same batch size, FP8 underutilizes the GPU more, leading to higher energy consumption until batch size is large enough to saturate the GPU.
 
 **Qwen 3 Coder 480B A35B.**
-In our benchmark, we select the parallelization method for an LLM simply by architecture: MoE models use Expert Parallelism with attention Tensor Parallelism, while other models use Tensor Parallelism for both MLP and attention.
-This makes FP8 vs BF16 comparisons for the same model straightforward since they use the same parallelization.
-However, Qwen 3 Coder 480B A35B is an exception; due to a limitation in vLLM at the time of benchmarking, the FP8 model had to run attention with data parallelism, while BF16 could run attention with tensor parallelism.[^vllm-qwen-3-coder-fp8-dp]
-This made FP8 consistently consume more time and energy than BF16 across all batch sizes.
-Attention data parallelism, especially *without* Prefill-Decode disaggregation, incurs load imbalance between GPUs that are assigned very different sequence lengths (e.g., some running long prefills whereas others run decode).
+This model is an exception; due to a limitation in vLLM at the time of benchmarking, the FP8 model had to run attention with data parallelism, while BF16 could run attention with tensor parallelism.[^vllm-qwen-3-coder-fp8-dp]
+This made FP8 consistently consume more time and energy across all batch sizes.
+Attention data parallelism incurs load imbalance between GPUs that are assigned very different sequence lengths (e.g., some running long prefills whereas others run decode).
 Since the straggler GPU bottlenecks the entire batch, this can lead to significant latency overhead.
-Furthermore, the non-straggler GPUs do nothing and waste static power waiting for the straggler, leading to even higher energy consumption as well.
+Furthermore, the non-straggler GPUs do nothing and waste static power (see [Static Power Wastage](#static-power-wastage)) waiting for the straggler, leading to even higher energy consumption as well.
 
-[^vllm-qwen-3-coder-fp8-dp]: [vLLM Recipes](https://github.com/vllm-project/recipes/blob/a86549479f2c38ac20b96483e7aacd128e3a40b2/Qwen/Qwen3-Coder-480B-A35B.md#fp8-models); last accessed 2024-12-26
+[^vllm-qwen-3-coder-fp8-dp]: Standard parallelization methods used for LLMs: MoE models use expert parallelism with attention tensor parallelism; dense models use Tensor Parallelism for both MLP and attention. For Qwen 3 Coder 480B A35B FP8, see [vLLM Recipes](https://github.com/vllm-project/recipes/blob/a86549479f2c38ac20b96483e7aacd128e3a40b2/Qwen/Qwen3-Coder-480B-A35B.md#fp8-models); last accessed 2024-12-26.
 
 !!! Takeaway
-    FP8 typically wins at batch sizes north of 32 on both energy and latency.
-    At batch size 8-16, FP8's fixed overhead makes it slower and less efficient than BF16.
+    At smaller batch sizes (8-16), FP8 can consume more time and/or energy than BF16.
+    FP8 gains start to appear at larger batch sizes.
 
 
 ### Multi-GPU Scaling
@@ -277,29 +285,30 @@ We can execute the same model on different numbers of GPUs, which affects both l
 <figure markdown>
   ![Multi-GPU scaling](assets/ml-energy-leaderboard-v3.0/section2-5-multi-gpu-light.svg#only-light)
   ![Multi-GPU scaling](assets/ml-energy-leaderboard-v3.0/section2-5-multi-gpu-dark.svg#only-dark)
-  <figcaption>Time-energy tradeoffs of GPT OSS 120B on B200 (left) and H100 (right). In both cases, scaling from 1 GPU (blue line) to 2 GPUs (red line) at fixed batch size trades energy for time. On H100 particularly, 1 GPU is memory-limited to batch size 64, while 2 GPUs unlock batch size 2048, which achieves much lower energy per token.</figcaption>
+  <figcaption>Time-energy tradeoffs of GPT-OSS 120B (Problem Solving). In both cases, scaling from 1 GPU to 2 GPUs at fixed batch size trades energy for time. In (b), 1 GPU is limited to batch size 64, while 2 GPUs unlock batch size 2,048 with less energy.</figcaption>
 </figure>
 
-We have drawn a time-energy tradeoff curve, which is useful in comparing different configurations:
+The figure above shows GPT OSS 120B on B200 and H100 with 1 and 2 GPUs.
+The plots are time-energy tradeoff curves, which are useful in comparing different configurations:
 
-- Draw a vertical line at your target latency to find the energy per token of different configurations that meet the latency target.
-- Jump between curves following points with the same batch size to see how GPU type and GPU count affect time and energy.
-- Find the right-end of each curve to see the minimum-energy configuration for that GPU type and GPU count.
-
+- The right-end of each curve represents the minimum-energy configuration for that GPU model and count.
+- A vertical line at one's target latency finds minimum-energy configurations that meet the latency constraint.
+- Jumping between curves following points with the same batch size shows the effect of GPU model and count.
 
 **At the same batch size, more GPUs trade energy for latency.**
 In general, increasing parallelism with more GPUs reduces latency but also increases energy at the same batch size because (1) latency does not decrease linearly due to communication overhead, and (2) less compute per GPU can lead to lower GPU utilization.
-On B200 configurations, adding GPUs at the same batch size reduced latency in 81% of cases and *always* increased energy per token.
-Similarly, on H100 configurations, energy increases in 93% of the cases and latency *always* decreases.
+Across B200 configurations, adding GPUs at the same batch size *always* increases energy per token and reduces latency in 81% of cases.
+Similarly, across H100 configurations, energy increases in 93% of the cases and latency *always* decreases.
 
-**Energy savings require models that need the extra memory.**
+**Memory capacity-bound cases unlock energy savings with more GPUs.**
 On top of the above, in cases where adding more GPUs *enables* larger batch sizes due to increased aggregate memory capacity, we can see energy reductions.
-For GPT OSS 120B on 1x B200 with a 180 GB VRAM, the model already fits at high batch sizes on 1 GPU (batch size 3072), so 2 GPUs only add overhead without enabling lower energy.
-On 1x H100 with an 80 GB VRAM, the server is limited to batch size 64, while 2 GPUs unlock batch size 2048 and achieve 68% lower minimum energy.
-So, the model's total parameter memory footprint relative to the GPU's memory capacity is an important factor in determining whether multi-GPU scaling can reduce energy by enabling larger batch sizes.
+For GPT OSS 120B on 1x B200 with a 180 GB VRAM, the model already fits at high batch sizes on 1 GPU (batch size 3,072), so 2 GPUs only add overhead without enabling lower energy.
+On 1x H100 with an 80 GB VRAM, however, the server is limited to batch size 64, while 2 GPUs unlock batch size 2,048 and achieve 68% lower minimum energy.
+Thus, the model's total parameter memory footprint relative to the GPU's memory capacity is an important factor for whether multi-GPU scaling can reduce energy.
 
-**Case study: Qwen 3 235B A22B Thinking FP8 on Problem Solving.**
-As an extra case study, it is interesting to look at Qwen 3 235B A22B Thinking FP8 on Problem Solving with configurations from 2x to 8x GPUs on both B200 and H100 drawn together on the same time-energy tradeoff plot.
+#### Case study: Qwen 3 235B A22B Thinking FP8 on Problem Solving
+
+As an extra case study, it is interesting to examine Qwen 3 235B A22B Thinking FP8 on Problem Solving with time-energy tradeoff frontiers for four sets of configurations (2x and 4x B200, 2x and 8x H100).
 
 <figure markdown>
   ![Time-energy tradeoff](assets/ml-energy-leaderboard-v3.0/section2-5-235b-tradeoff-light.svg#only-light)
@@ -307,104 +316,118 @@ As an extra case study, it is interesting to look at Qwen 3 235B A22B Thinking F
   <figcaption>Time-energy tradeoff for Qwen 3 235B A22B Thinking FP8 on Problem Solving across B200 and H100 with different GPU counts. Each point is annotated with its batch size.</figcaption>
 </figure>
 
-4x B200 (blue) Pareto-dominates, achieving the lowest possible energy (~0.4 J/token) and unlocking large batch sizes.
-2x B200 (red) consumes less energy per token compared to 4x B200 at the same batch sizes (as expected), but at the cost of higher latency and fails to scale to large batch sizes.
+The 4x B200 curve (blue) Pareto-dominates, and also achieves the lowest possible energy (~0.4 J/token) by unlocking large batch sizes.
+2x B200 (red) consumes less energy per token compared to 4x B200 (blue) at the same batch size at the cost of higher latency (as expected), and fails to scale to large batch sizes due to limited memory capacity.
 The two H100 configurations (purple and green) are right in the middle of the B200 curves; despite being a whole generation older, H100 is still competitive!
 
 !!! Takeaway
     At the same batch size, more GPUs typically reduce latency but increase energy.
-    When adding GPUs enables larger batch sizes, energy can be reduced--but only if serving was previously limited by memory capacity.
+    When adding GPUs enables larger batch sizes, energy can be reduced, but only if serving was previously limited by memory capacity.
     H100 can still be competitive with B200 in terms of energy, especially when latency constraints are tight.
 
 
 ## Reasoning about Energy Consumption
 
-In the previous sections, we presented empirical observations on energy consumption.
-Now, what do we make of these results?
-In this section, we outline core mechanisms that govern energy consumption, with the goal of providing tools to *reason about* energy consumption.
+In the previous sections, we presented empirical observations on energy consumption, but how can we act on them?
+In this section, we outline core mechanisms that govern energy consumption, with the goal of providing tools to *explain and reason about* energy consumption.
 
-### The Core Mechanisms
+### Model, Runtime, and Hardware Factors
 
 Many factors across the whole system (hardware, software, and algorithm) affect energy consumption.
-Some of the key mechanisms trivial.
+Some of the key mechanisms are powerful but still straightforward.
 For instance, more computation generally means more energy consumption.
-MoE models activate fewer parameters per token than dense models ([Model Size](#model-size)), FP8 reduces computation via lower-precision arithmetic ([Precision](#precision)), and diffusion models' energy scales with denoising steps and output resolution ([Diffusion Models](#diffusion-models)).
-This is why model-level efficiency improvements matter greatly.
+As we have seen, diffusion models' energy increases with more denoising steps and higher output resolution ([Diffusion Models](#diffusion-models)), MoE models activate fewer parameters per token than dense models ([Model Size and Architecture](#model-size-and-architecture)), and FP8 reduces circuit activity via lower-precision arithmetic ([Precision](#precision)).
+These are examples of choices at the runtime- and model-level directly affecting the amount of computation, and thus energy consumption.
 
 Another instance is hardware efficiency improvements over generations.
-Newer GPU architectures typically deliver more operations per joule.
-We've indeed seen that B200 generally consumes less energy than H100 for the same amount of work ([B200 versus H100](#b200-versus-h100)), though the gap varies by model and configuration.
-
-The aforementioned two mechanisms are largely about model and hardware choices.
-However, in order to understand and reason about energy consumption in real world systems, we go deeper into system-level mechanisms.
+Newer architectures typically deliver more operations per joule via various microarchitectural improvements and technology node shrinks.
+We have indeed seen that B200 generally consumes less energy than H100 ([GPU Generation](#gpu-generation)).
 
 ### Static Power Wastage
 
-The power consumption of the GPU, which is the major energy consumer, has two components: *static power* (consumed regardless of activity) and *dynamic power* (reflects compute and memory activity).
-When the GPU is underutilized, static power is consumed during that time period anyway, wasting energy and reducing energy efficiency for the same amount of work.
-Therefore, higher GPU utilization leads to lower energy for the same amount of work.
+The power consumption of computing hardware, including GPUs, has two components: *static power* (consumed regardless of activity at all times) and *dynamic power* (reflects compute and memory activity).
+Let us consider a case where we executed some computation on a GPU, and only 60% of the GPU's compute units were utilized over the entire execution time.
+Here, the GPU will consume static power for the entire execution time, regardless of how well the GPU is utilized.
+Thus, 40% of the time the GPU is consuming static power while making little progress, effectively wasting energy.
+This is how low utilization increases static power wastage and thus energy consumption for the same amount of work.
 
-One of the most critical factors in GPU utilization is actually not the GPU, but the rest of the system.
-That is, the GPU should be the bottleneck, not other system components.
-When CPU preprocessing, network communication, or other overheads limit throughput, the GPU sits idle waiting, wasting static power.
+However, one of the most critical factors in GPU utilization is, in fact, not the GPU, but the rest of the system.
+That is, we want the GPU to be the sole bottleneck, not other system components.
+When CPU processing, network communication, disk I/O, or other parts of the system block GPU progress, the GPU does not have enough work to saturate itself or is even idle, wasting static power.
+Multimodal LLMs ([Multimodal LLM](#multimodal-llm)) were a prime example: CPU-side vision preprocessing became a bottleneck that limited batch size, leaving the GPU underutilized despite having capacity for more concurrent requests.
+The result was higher energy per token---not because of the GPU, but because of the surrounding system.
 
-We saw this with multimodal LLMs ([Multimodal LLM](#multimodal-llm)): CPU-side vision preprocessing became a bottleneck that limited batch size, leaving GPU memory underutilized despite having capacity for more concurrent requests.
-The result was higher energy per token—not because of the GPU, but because of the surrounding system.
+Another important factor is arithmetic intensity, i.e., the ratio of compute operations to the amount of memory movement.
+When arithmetic intensity is low, the GPU may be waiting on memory fetches more often than performing computations, leading to lower GPU utilization and higher static power wastage.
+We observed this for precision ([Precision](#precision)), where FP8 computations require extra operations that are not as arithmetically intensive as matrix multiplications.
+Thus, on smaller batch sizes, both FP8 extra operations and the smaller matrix multiplications had lower arithmetic intensity, leading to lower GPU utilization and offsetting savings from lower-precision arithmetic.
 
-This has practical implications: upgrading to a faster GPU without addressing system bottlenecks may actually *worsen* energy per output, as the more powerful GPU spends even more time waiting and wasting static power.
+This has interactions with earlier factors as well.
+For instance, upgrading to a newer hardware generation expecting better energy efficiency may not yield the expected benefits, or even worsen, if bottlenecks in the rest of the system were preventing the GPU from being fully utilized.
 
 
 ### Time-Energy Tradeoff Frontier
 
-As we have seen, there are cases where there is a time--energy tradeoff frontier for the same amount of work.
-When the GPU *is* the bottleneck—the ideal case, we can navigate the time-energy tradeoff frontier through configuration choices.
-Which point on the frontier we can choose depends on application-level requirements; it could be latency deadlines for energy budgets.
+There are many cases where there is a time-energy tradeoff frontier for the same amount of work (e.g., the [case study](#case-study-qwen-3-235b-a22b-thinking-fp8-on-problem-solving) figure).
+When the GPU ideally *is* the bottleneck, largely ruling out static power wastage ([Static Power Wastage](#static-power-wastage)), we can navigate the time-energy tradeoff frontier through configuration choices.[^tradeoff-note]
+In our analysis, the factors that govern this frontier are:
 
-For many ML applications, batch size is one of the most important lever.
-Especially for LLM decode, larger batches increase arithmetic intensity, improving utilization and reducing energy per token ([Batch Size](#batch-size)).
-However, batch size is constrained by two factors:
+- **Batch size:** This is the primary knob that *shapes* and *navigates* the time-energy frontier.
+- **Memory capacity:** Larger batches consume more memory. When GPU memory is saturated, we hit a ceiling, like we have seen for reasoning models in the [LLM](#llm) section. In other words, memory capacity *bookends* the frontier.
+- **Application constraints:** Applications may come with latency deadlines or energy budgets. Larger batches increase per-request latency and reduce energy per work. Application-level latency and/or energy budgets allow us to *select* a point on the frontier.
 
-- **Memory capacity:** Larger batches require more memory for activations and KV cache for LLMs. When GPU memory is exhausted, we hit a ceiling. This is why models with longer outputs achieve lower maximum batch sizes ([LLM](#llm)).
-- **Latency requirements:** Larger batches increase per-request latency. Strict latency constraints may force smaller batch sizes than what would minimize energy.
+Batch size does not have to be the only knob that shapes the time-energy tradeoff frontier.
+For instance, the number of GPUs ([Multi-GPU Scaling](#multi-gpu-scaling)) can be effective, where adding GPUs increases aggregate memory capacity and also enables larger batch sizes that were not previously possible.
+While not explored in this post, GPU power limit and core frequency are also knobs that shape the frontier.
 
-Many configurations alter the time-energy tradeoff frontier itself, and [Multi-GPU Scaling](#multi-gpu-scaling) is a prime example.
-Adding GPUs increases aggregate memory capacity, potentially enabling larger batch sizes that weren't previously possible ([Multi-GPU Scaling](#multi-gpu-scaling)).
-But this only helps if the single-GPU configuration was memory-limited.
-Otherwise, additional GPUs just add communication overhead without enabling better configurations.
+[^tradeoff-note]: When the GPU is being underutilized, a proper time-energy *tradeoff* frontier may not exist, as both time and energy can be reduced by improving GPU utilization.
 
 
-### Power and Energy
+### Extending to AI Datacenters
 
-We've briefly touched on what happens to GPU power draw when we change batch size [earlier](#batch-size); it generally increases with batch size as the GPU is more fully utilized.
-Is that all there is for power?
+Our analysis so far has focused on energy consumption, but power is also an important metric to consider.
+Indeed, many AI datacenters today are **power-constrained**.
+Power availability caps the datacenter's power budget---either from the electricity grid (where drawing too much may not be approved or may cause reliability issues) or from on-site generation like natural gas and batteries (which take *years* to build).
 
-Many AI datacenters today are **power-constrained**; they have more hardware inside than their maximum power budget (this is called *oversubscription*).
-Especially for AI datacenters with massive power draw, the datacenter's power budget is constrained heavily by power availability -- either from the electricity grid (drawing too much will likely not be approved, could cause grid reliability issues, or result in price hikes), or from on-site power generation like natural gas and batteries (which take minimum *years* to build).
-
-That's why one of the most important metrics today is **throughput per watt** (e.g., tokens per second per watt, images per second per watt).
-It tells you how much work you can get done within your power budget.
-If it's tokens per second per watt, it tells you how many tokens you can generate per second in your power-constrained datacenter, which translates to how many ChatGPT users you can serve, for instance.
-
-How does this relate to energy?
+With power becoming the bottleneck resource, **throughput per watt** (e.g., tokens per second per watt, images per second per watt) is a critical metric for AI datacenter operators.
+For instance, tokens per second per watt can tell the operator how many average ChatGPT users the datacenter can serve within its power budget.
 
 $$
 \text{Throughput per Watt} = \frac{\text{Throughput}}{\text{Power}} = \frac{\text{Work} / \text{Time}}{\text{Energy} / \text{Time}} = \frac{\text{Work}}{\text{Energy}}
 $$
 
-So, throughput per watt is basically the inverse of energy consumption per fixed amount of work (e.g., energy per token, energy per image).
-Thus, optimizing energy consumption for the given work improves throughput per watt.
+Throughput per watt is essentially the inverse of energy consumption per fixed work (e.g., energy per token, energy per image).
+Thus, optimizing energy consumption for the given work improves throughput per watt, closing the reasoning loop.
 
 <figure markdown>
   ![Power and energy](assets/ml-energy-leaderboard-v3.0/section3-power-light.svg#only-light)
   ![Power and energy](assets/ml-energy-leaderboard-v3.0/section3-power-dark.svg#only-dark)
-  <figcaption>Energy per token (left) and token throughput per watt (right) for four models on B200. Note that the left plot's Y axis is log scale.</figcaption>
+  <figcaption>Energy and throughput/watt for four models on B200 with varying batch size. Note the log scale Y axis in (a).</figcaption>
 </figure>
 
 As batch size increases, energy per token decreases and throughput per watt increases, both eventually plateauing as the GPU reaches saturation.
 
+
+### Putting Everything Together
+
+<figure markdown>
+  ![Reasoning framework](assets/ml-energy-leaderboard-v3.0/section3-reasoning-framework-light.svg#only-light)
+  ![Reasoning framework](assets/ml-energy-leaderboard-v3.0/section3-reasoning-framework-dark.svg#only-dark)
+  <figcaption>A framework for reasoning about inference energy consumption in our analysis. Gray boxes are properties and knobs, blue boxes are latent factors, and orange boxes are the end metrics we observe from measurements and would like to understand and explain.</figcaption>
+</figure>
+
+The figure above summarizes the structure of reasoning we have developed.
+Gray boxes are *properties* and *low-level knobs* of the algorithm, software, and hardware.
+Blue boxes represent *latent* variables that mediate between configurations and outcomes.
+Orange boxes show the end metrics we measure from benchmarks and ultimately want to understand.
+
+Causal structures like this show how different factors interact and propagate to affect the end metric and provide a framework for explaining empirical observations.
+When we observe unexpected energy behavior, we can trace through these factors to identify the root cause---whether it is memory constraints limiting batch size, CPU bottlenecks causing GPU underutilization, or compute volume increasing due to model choices.
+This also enables reasoning about optimization opportunities and hypothesizing about how they will affect energy consumption.
+
 !!! Takeaway
-    Energy consumption is governed by four mechanisms: computation amount, hardware efficiency, GPU utilization, and the time-energy tradeoff frontier.
-    System design choices—eliminating non-GPU bottlenecks and navigating the frontier via batch size and memory capacity—are key levers for optimization.
+    Energy consumption is governed by computation amount, hardware efficiency, GPU utilization, and the time-energy tradeoff frontier.
+    System design choices---eliminating non-GPU bottlenecks and navigating the frontier via batch size and memory capacity---are key levers for optimization.
     Throughput per watt is the inverse of energy per output; optimizing one optimizes the other.
 
 
