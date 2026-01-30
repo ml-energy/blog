@@ -1,5 +1,5 @@
 ---
-date: 2026-01-13
+date: 2026-01-29
 authors:
   - jaywonchung
 categories:
@@ -11,7 +11,7 @@ links:
   - PDF Version: https://arxiv.org/abs/2601.22076
 ---
 
-# Reading the ML.ENERGY Leaderboard v3.0
+# Diagnosing Inference Energy Consumption with the ML.ENERGY Leaderboard v3.0
 
 With [The ML.ENERGY Benchmark v3.0](https://github.com/ml-energy/benchmark/releases/tag/v3.0) we released in December 2025, we expanded our scope to up-to-date important models, tasks, and GPU hardware.
 This included 46 models across 7 tasks, producing 1,858 configurations on NVIDIA H100 and B200 GPUs.[^software-setup]
