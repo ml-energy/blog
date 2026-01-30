@@ -8,6 +8,7 @@ categories:
 links:
   - The ML.ENERGY Leaderboard: https://ml.energy/leaderboard
   - The ML.ENERGY Benchmark: https://github.com/ml-energy/benchmark
+  - PDF Version: https://arxiv.org/abs/2601.22076
 ---
 
 # Reading the ML.ENERGY Leaderboard v3.0
@@ -15,11 +16,13 @@ links:
 With [The ML.ENERGY Benchmark v3.0](https://github.com/ml-energy/benchmark/releases/tag/v3.0) we released in December 2025, we expanded our scope to up-to-date important models, tasks, and GPU hardware.
 This included 46 models across 7 tasks, producing 1,858 configurations on NVIDIA H100 and B200 GPUs.[^software-setup]
 As always, latest benchmarking results are public and can be browsed on [The ML.ENERGY Leaderboard](https://ml.energy/leaderboard).
-This post presents notable results from the v3.0 benchmark run.
+
+In this post, we first present empirical observations from measurements, and then develop a reasoning framework that explains *why* we observe certain energy behaviors.
 
 <!-- more -->
 
-For more details on our methodology, please refer to [our NeurIPS 25 D&B paper](https://arxiv.org/abs/2505.06371).
+A PDF version of this post is available on [arXiv](https://arxiv.org/abs/2601.22076).
+For more details on our benchmarking methodology, please refer to [our NeurIPS 25 D&B paper](https://arxiv.org/abs/2505.06371).
 
 [^software-setup]: We used vLLM 0.11.1 for LLM/MLLMs and xDiT 0.4.5 for diffusion models.
 
@@ -306,8 +309,7 @@ For GPT OSS 120B on 1x B200 with a 180 GB VRAM, the model already fits at high b
 On 1x H100 with an 80 GB VRAM, however, the server is limited to batch size 64, while 2 GPUs unlock batch size 2,048 and achieve 68% lower minimum energy.
 Thus, the model's total parameter memory footprint relative to the GPU's memory capacity is an important factor for whether multi-GPU scaling can reduce energy.
 
-#### Case study: Qwen 3 235B A22B Thinking FP8 on Problem Solving
-
+**Case study: Qwen 3 235B A22B Thinking FP8 on Problem Solving.**
 As an extra case study, it is interesting to examine Qwen 3 235B A22B Thinking FP8 on Problem Solving with time-energy tradeoff frontiers for four sets of configurations (2x and 4x B200, 2x and 8x H100).
 
 <figure markdown>
@@ -368,7 +370,7 @@ For instance, upgrading to a newer hardware generation expecting better energy e
 
 ### Time-Energy Tradeoff Frontier
 
-There are many cases where there is a time-energy tradeoff frontier for the same amount of work (e.g., the [case study](#case-study-qwen-3-235b-a22b-thinking-fp8-on-problem-solving) figure).
+There are many cases where there is a time-energy tradeoff frontier for the same amount of work.
 When the GPU ideally *is* the bottleneck, largely ruling out static power wastage ([Static Power Wastage](#static-power-wastage)), we can navigate the time-energy tradeoff frontier through configuration choices.[^tradeoff-note]
 In our analysis, the factors that govern this frontier are:
 
