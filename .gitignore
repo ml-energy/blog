@@ -2,3 +2,4 @@
 .cache/
 site/
 .ipynb_checkpoints/
+.DS_Store

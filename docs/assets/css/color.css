@@ -1,3 +1,4 @@
+/* Dark mode (slate scheme) */
 [data-md-color-primary="ml.energy"] {
   --md-primary-fg-color:        #23d175;
   --md-primary-fg-color--light: #23d175;
@@ -10,4 +11,15 @@
   --md-accent-fg-color--transparent: #3b943c50;
   --md-accent-bg-color:              #79d07a;
   --md-accent-bg-color--light:       #79d07a;
+}
+
+/* Light mode (default scheme) - darker green for better contrast */
+[data-md-color-scheme="default"][data-md-color-primary="ml.energy"] {
+  --md-primary-fg-color:        #1aab5a;
+  --md-primary-fg-color--light: #1aab5a;
+}
+
+[data-md-color-scheme="default"][data-md-color-accent="ml.energy"] {
+  --md-accent-fg-color:              #2d7a30;
+  --md-accent-fg-color--transparent: #2d7a3050;
 }
