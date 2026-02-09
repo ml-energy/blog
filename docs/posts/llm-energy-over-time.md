@@ -95,8 +95,8 @@ Throughput grew faster than power, resulting in a net energy reduction.
 
 !!! Takeaway
     V3 achieves 3-5x higher throughput and 15-41% lower energy per token on Llama 3.1 models with the same hardware.
-    Energy per token improves less than throughput because power also increases.
-    The gap is largest at small batch sizes where the GPU is underutilized the most, and software optimizations had a large impact in this regime.
+    Especially, at small batch sizes, we see nearly a halving of energy per token, which is a significant improvement for latency-sensitive applications.
+    The reason energy per token improves less than throughput is that power also increases as the GPU is more fully utilized.
 
 
 ## Summing Up
@@ -104,7 +104,11 @@ Throughput grew faster than power, resulting in a net energy reduction.
 Energy consumption is a pressing issue across the AI stack, from individual inference requests to datacenter-scale deployments.
 But the V2-to-V3 transition shows that we are making relentless progress: software optimizations (vLLM 0.5.4 to 0.11.1) delivered 3-5x throughput improvements and measurable energy reductions.
 
-This progress spans the entire stack (inference engines, model architectures, quantization, and hardware) and the improvements compound.
+The small batch size (i.e., low latency) regime is the most challenging to run efficiently, and as we saw, that is also where software optimizations had the biggest impact on energy efficiency.
+This regime actually matters a lot for *agentic* applications that generate a *ton* of tokens; in order to keep latency in a reasonable range, these applications often run with small batch sizes.
+In this specific analysis, we see nearly a halving of energy per token at smaller batch sizes, which is a significant improvement for these applications.
+
+Progress spans the entire stack (inference engines, model architectures, quantization, and hardware) and the improvements compound.
 To understand how all these factors interact and to learn how to reason about and explain energy consumption, see [our V3 leaderboard blog post](ml-energy-leaderboard-v3.0.md).
 
 
