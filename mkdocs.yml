@@ -19,6 +19,7 @@ theme:
     - navigation.instant.prefetch
     - content.tooltips
     - content.code.copy
+    - announce.dismiss
   palette:
     - scheme: slate
       primary: ml.energy

@@ -47,6 +47,16 @@ a.autorefs-external:hover::after, a.external:hover::after {
   margin: 0 0.5em;
 }
 
+/* Announcement banner */
+.md-banner {
+  text-align: center;
+  background: var(--md-code-bg-color);
+  color: var(--md-default-fg-color);
+}
+.md-banner a {
+  color: var(--md-primary-fg-color);
+}
+
 /* Newsletter signup box */
 .newsletter-signup {
   background: var(--md-code-bg-color);
