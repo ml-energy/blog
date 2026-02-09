@@ -16,3 +16,21 @@
   <meta name="twitter:description" content="{{ config.site_description }}" />
   <meta name="twitter:image" content="https://ml.energy/assets/img/og_image.png" />
 {% endblock %}
+
+{% block footer %}
+<div class="newsletter-signup">
+  <div class="newsletter-content">
+    <h3>Stay Updated</h3>
+    <p>Subscribe to our newsletter for the latest ML energy research.</p>
+    <form
+      action="https://buttondown.com/api/emails/embed-subscribe/ml-energy"
+      method="post"
+      class="newsletter-form"
+    >
+      <input type="email" name="email" placeholder="Enter your email" required />
+      <button type="submit">Subscribe</button>
+    </form>
+  </div>
+</div>
+{{ super() }}
+{% endblock %}

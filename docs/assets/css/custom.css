@@ -46,3 +46,53 @@ a.autorefs-external:hover::after, a.external:hover::after {
   max-width: none;
   margin: 0 0.5em;
 }
+
+/* Newsletter signup box */
+.newsletter-signup {
+  background: var(--md-code-bg-color);
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+  padding: 2rem 1rem;
+  text-align: center;
+}
+.newsletter-content {
+  max-width: 500px;
+  margin: 0 auto;
+}
+.newsletter-content h3 {
+  margin: 0 0 0.5rem;
+  color: var(--md-primary-fg-color);
+  font-size: 1.1rem;
+}
+.newsletter-content p {
+  margin: 0 0 1rem;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.8rem;
+}
+.newsletter-form {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.newsletter-form input[type="email"] {
+  flex: 1;
+  max-width: 300px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.25rem;
+  background: var(--md-default-bg-color);
+  color: var(--md-default-fg-color);
+  font-size: 0.8rem;
+}
+.newsletter-form button {
+  padding: 0.5rem 1.25rem;
+  background: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+.newsletter-form button:hover {
+  background: var(--md-accent-fg-color);
+}
