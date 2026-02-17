@@ -1,24 +1,7 @@
 """Generate figures for the ML.ENERGY Leaderboard v3.0 blog post.
 
-Each section function generates one or two SVG/PNG figures and prints
-key statistics cited in the post. Demonstrates the mlenergy-data toolkit's
-typed collection API (LLMRuns, DiffusionRuns) for loading, filtering,
-grouping, and analyzing benchmark data.
-
 Usage:
-    # From compiled data directory (parquet-first, fast)
-    uv run --with matplotlib --with numpy python blog_analysis_scripts.py \
-        --mlenergy-data-dir /path/to/compiled/data
-
-    # From raw benchmark results
-    uv run --with matplotlib --with numpy python blog_analysis_scripts.py \
-        --results-dir /path/to/llm/h100/current/run \
-        --results-dir /path/to/llm/b200/current/run \
-        --results-dir /path/to/diffusion/h100/current/run \
-        --results-dir /path/to/diffusion/b200/current/run
-
-    # From Hugging Face Hub (default)
-    uv run --with matplotlib --with numpy python blog_analysis_scripts.py
+    uv run --with matplotlib --with mlenergy-data analysis/ml-energy-leaderboard-v3.0.py
 """
 
 from __future__ import annotations
