@@ -1,0 +1,1602 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="ML.ENERGY research & tech blog">
+      
+      
+        <meta name="author" content="The ML.ENERGY Initiative">
+      
+      
+        <link rel="canonical" href="https://ml.energy/blog/measurement/energy/diagnosing-inference-energy-consumption-with-the-mlenergy-leaderboard-v30/">
+      
+      
+        <link rel="prev" href="../../../energy/measurement/profiling-llm-energy-consumption-on-macs/">
+      
+      
+        <link rel="next" href="../llm-inference-energy-a-longitudinal-analysis/">
+      
+      
+        
+      
+      
+        <link rel="alternate" type="application/rss+xml" title="RSS feed" href="../../../feed_rss_created.xml">
+        <link rel="alternate" type="application/rss+xml" title="RSS feed of updated content" href="../../../feed_rss_updated.xml">
+      
+      <link rel="icon" href="../../../assets/img/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+    
+    
+      
+        <title>Diagnosing Inference Energy Consumption with the ML.ENERGY Leaderboard v3.0 - ML.ENERGY Blog</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/css/color.css">
+    
+      <link rel="stylesheet" href="../../../assets/css/custom.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-C013T57GV2"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-C013T57GV2",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-C013T57GV2",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+  
+  
+    
+  
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="ML.ENERGY Blog - Diagnosing Inference Energy Consumption with the ML.ENERGY Leaderboard v3.0" />
+  <meta property="og:description" content="ML.ENERGY research & tech blog" />
+  <meta property="og:url" content="https://ml.energy/blog/measurement/energy/diagnosing-inference-energy-consumption-with-the-mlenergy-leaderboard-v30/" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ML.ENERGY Blog - Diagnosing Inference Energy Consumption with the ML.ENERGY Leaderboard v3.0" />
+  <meta name="twitter:description" content="ML.ENERGY research & tech blog" />
+  <meta name="twitter:image" content="https://ml.energy/assets/img/og_image.png" />
+
+  
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Diagnosing Inference Energy Consumption with the ML.ENERGY Leaderboard v3.0 - ML.ENERGY Blog" />
+<meta property="og:description" content="ML.ENERGY research & tech blog" />
+<meta property="og:image" content="https://ml.energy/blog/assets/img/social/measurement/energy/diagnosing-inference-energy-consumption-with-the-mlenergy-leaderboard-v30.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:url" content="https://ml.energy/blog/measurement/energy/diagnosing-inference-energy-consumption-with-the-mlenergy-leaderboard-v30/" />
+<meta property="twitter:card" content="summary_large_image" />
+<meta property="twitter:title" content="Diagnosing Inference Energy Consumption with the ML.ENERGY Leaderboard v3.0 - ML.ENERGY Blog" />
+<meta property="twitter:description" content="ML.ENERGY research & tech blog" />
+<meta property="twitter:image" content="https://ml.energy/blog/assets/img/social/measurement/energy/diagnosing-inference-energy-consumption-with-the-mlenergy-leaderboard-v30.png" />
+</head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="ml.energy" data-md-color-accent="ml.energy">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#diagnosing-inference-energy-consumption-with-the-mlenergy-leaderboard-v30" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+        <aside class="md-banner">
+          <div class="md-banner__inner md-grid md-typeset">
+            
+              <button class="md-banner__button md-icon" aria-label="Don't show this again">
+                
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+              </button>
+            
+            
+  We're sharing updates via <a href="https://buttondown.com/ml-energy">The ML.ENERGY Newsletter</a>!
+
+          </div>
+          
+            <script>var el=document.querySelector("[data-md-component=announce]");if(el){var content=el.querySelector(".md-typeset");__md_hash(content.innerHTML)===__md_get("__announce")&&(el.hidden=!0)}</script>
+          
+        </aside>
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="ML.ENERGY Blog" class="md-header__button md-logo" aria-label="ML.ENERGY Blog" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 15H6l7-14v8h5l-7 14z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ML.ENERGY Blog
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Diagnosing Inference Energy Consumption with the ML.ENERGY Leaderboard v3.0
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="ml.energy" data-md-color-accent="ml.energy"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M178.2-10.1c7.4-3.1 15.8-2.2 22.5 2.2l87.8 58.2 87.8-58.2c6.7-4.4 15.1-5.2 22.5-2.2S411.4-.5 413 7.3l20.9 103.2 103.2 20.9c7.8 1.6 14.4 7 17.4 14.3s2.2 15.8-2.2 22.5L494.1 256l58.2 87.8c4.4 6.7 5.2 15.1 2.2 22.5s-9.6 12.8-17.4 14.3l-103.3 20.8L413 504.7c-1.6 7.8-7 14.4-14.3 17.4s-15.8 2.2-22.5-2.2l-87.8-58.2-87.8 58.2c-6.7 4.4-15.1 5.2-22.5 2.2s-12.8-9.6-14.3-17.4L143 401.4 39.7 380.5c-7.8-1.6-14.4-7-17.4-14.3s-2.2-15.8 2.2-22.5L82.7 256l-58.2-87.8c-4.4-6.7-5.2-15.1-2.2-22.5s9.6-12.8 17.4-14.3L143 110.6 163.9 7.3c1.6-7.8 7-14.4 14.3-17.4M207.6 256a80.4 80.4 0 1 1 160.8 0 80.4 80.4 0 1 1-160.8 0m208.8 0a128.4 128.4 0 1 0-256.8 0 128.4 128.4 0 1 0 256.8 0"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="ml.energy" data-md-color-accent="ml.energy"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M239.3 48.7C132.2 57.2 48 146.8 48 256c0 114.9 93.1 208 208 208 33.3 0 64.7-7.8 92.6-21.7C245.2 418.9 168 326.5 168 216c0-65.8 27.4-125.1 71.3-167.3M0 256C0 114.6 114.6 0 256 0c19.4 0 38.4 2.2 56.7 6.3 9.9 2.2 17.3 10.5 18.5 20.5s-4 19.8-13.1 24.4C257.5 81.4 216 143.9 216 216c0 101.6 82.4 184 184 184 5 0 9.9-.2 14.8-.6 10.1-.8 19.6 4.8 23.8 14.1s2 20.1-5.3 27.1C387.3 484.8 324.8 512 256 512 114.6 512 0 397.4 0 256"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="ML.ENERGY Blog" class="md-nav__button md-logo" aria-label="ML.ENERGY Blog" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 15H6l7-14v8h5l-7 14z"/></svg>
+
+    </a>
+    ML.ENERGY Blog
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ML.ENERGY Research and Tech Blog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Archive
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Archive
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../archive/2026/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2026
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../archive/2025/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2025
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../archive/2023/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2023
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Categories
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Categories
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../category/energy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    energy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../category/measurement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    measurement
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../category/research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#energy-by-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy by Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Energy by Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#llm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multimodal-llm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multimodal LLM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diffusion-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diffusion Models
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deeper-dive-into-energy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deeper Dive into Energy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deeper Dive into Energy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#batch-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batch Size
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#model-size-and-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Size and Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gpu-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPU Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#precision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Precision
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-gpu-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-GPU Scaling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reasoning-about-energy-consumption" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reasoning about Energy Consumption
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reasoning about Energy Consumption">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#model-runtime-and-hardware-factors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model, Runtime, and Hardware Factors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#static-power-wastage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Static Power Wastage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#time-energy-tradeoff-frontier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time-Energy Tradeoff Frontier
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extending-to-ai-datacenters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extending to AI Datacenters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#putting-everything-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Putting Everything Together
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summing-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summing Up
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+  <div class="md-content md-content--post" data-md-component="content">
+    <div class="md-sidebar md-sidebar--post" data-md-component="sidebar" data-md-type="navigation">
+      <div class="md-sidebar__scrollwrap">
+        <div class="md-sidebar__inner md-post">
+          <nav class="md-nav md-nav--primary">
+            <div class="md-post__back">
+              <div class="md-nav__title md-nav__container">
+                <a href="../../.." class="md-nav__link">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+                  <span class="md-ellipsis">
+                    Back to index
+                  </span>
+                </a>
+              </div>
+            </div>
+            
+              <div class="md-post__authors md-typeset">
+                
+                  <div class="md-profile md-post__profile">
+                    <span class="md-author md-author--long">
+                      <img src="https://ml.energy/assets/img/members/jae-won.jpg" alt="Jae-Won Chung">
+                    </span>
+                    <span class="md-profile__description">
+                      <strong>
+                        
+                          Jae-Won Chung
+                        
+                      </strong>
+                      <br>
+                      PhD Student
+                    </span>
+                  </div>
+                
+              </div>
+            
+            <ul class="md-post__meta md-nav__list">
+              <li class="md-nav__item md-nav__item--section">
+                <div class="md-post__title">
+                  <span class="md-ellipsis">
+                    Metadata
+                  </span>
+                </div>
+                <nav class="md-nav">
+                  <ul class="md-nav__list">
+                    <li class="md-nav__item">
+                      <div class="md-nav__link">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 19H5V8h14m-3-7v2H8V1H6v2H5c-1.11 0-2 .89-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-1V1m-1 11h-5v5h5z"/></svg>
+                        <time datetime="2026-01-29 00:00:00+00:00" class="md-ellipsis">January 29, 2026</time>
+                      </div>
+                    </li>
+                    
+                    
+                      <li class="md-nav__item">
+                        <div class="md-nav__link">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 3v15h3V3zm3 2 4 13 3-1-4-13zM5 5v13h3V5zM3 19v2h18v-2z"/></svg>
+                          <span class="md-ellipsis">
+                            in
+                            
+                              <a href="../../../category/measurement/">measurement</a>, 
+                              <a href="../../../category/energy/">energy</a></span>
+                        </div>
+                      </li>
+                    
+                    
+                  </ul>
+                </nav>
+              </li>
+            </ul>
+            
+              <ul class="md-post__meta md-nav__list">
+                <li class="md-nav__item md-nav__item--section">
+                  <div class="md-post__title">
+                    <span class="md-ellipsis">
+                      Related links
+                    </span>
+                  </div>
+                  <nav class="md-nav">
+                    <ul class="md-nav__list">
+                      
+                        
+                        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://ml.energy/leaderboard" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The ML.ENERGY Leaderboard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                      
+                        
+                        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/ml-energy/benchmark" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The ML.ENERGY Benchmark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                      
+                        
+                        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://arxiv.org/abs/2601.22076" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDF Version
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                      
+                    </ul>
+                  </nav>
+                </li>
+              </ul>
+            
+          </nav>
+          
+        </div>
+      </div>
+    </div>
+    <article class="md-content__inner md-typeset">
+      
+        
+  
+
+
+
+
+<h1 id="diagnosing-inference-energy-consumption-with-the-mlenergy-leaderboard-v30">Diagnosing Inference Energy Consumption with the ML.ENERGY Leaderboard v3.0</h1>
+<p>With <a href="https://github.com/ml-energy/benchmark/releases/tag/v3.0">The ML.ENERGY Benchmark v3.0</a> we released in December 2025, we expanded our scope to up-to-date important models, tasks, and GPU hardware.
+This included 46 models across 7 tasks, producing 1,858 configurations on NVIDIA H100 and B200 GPUs.<sup id="fnref:software-setup"><a class="footnote-ref" href="#fn:software-setup">1</a></sup>
+As always, latest benchmarking results are public and can be browsed on <a href="https://ml.energy/leaderboard">The ML.ENERGY Leaderboard</a>.</p>
+<p>In this post, we first present empirical observations from measurements, and then develop a reasoning framework that explains <em>why</em> we observe certain energy behaviors.</p>
+<!-- more -->
+
+<p>A PDF version of this post is available on <a href="https://arxiv.org/abs/2601.22076">arXiv</a>.
+For more details on our benchmarking methodology, please refer to <a href="https://arxiv.org/abs/2505.06371">our NeurIPS 25 D&amp;B paper</a>.</p>
+<h2 id="energy-by-architecture">Energy by Architecture</h2>
+<p>What determines the energy consumption of generating one <strong>response</strong>?
+For Large Language Models (LLMs), a response is a complete answer to a prompt with all output <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">tokens</abbr> included.
+For diffusion models, a response is one generated image or video.</p>
+<h3 id="llm">LLM</h3>
+<p><strong>Task type heavily influences output length.</strong>
+LLM time and energy consumption is dominated by the decoding (<abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> generation) phase.
+Different tasks naturally produce different distributions of output lengths.
+This is particularly pronounced between two LLM tasks in our benchmark: Problem Solving (reasoning on) and Text Conversation (reasoning off).</p>
+<figure>
+<p><img alt="Energy and output length distributions" src="../../../assets/ml-energy-leaderboard-v3.0/section1-1-llm-light.svg#only-light" />
+  <img alt="Energy and output length distributions" src="../../../assets/ml-energy-leaderboard-v3.0/section1-1-llm-dark.svg#only-dark" />
+  </p>
+<figcaption>Distribution of (a) number of output tokens, (b) energy per token, and (c) energy per response across all models on B200 GPUs using their respective minimum-energy configurations.</figcaption>
+</figure>
+<p>Here, we're comparing the <abbr title="For a model, task, GPU model, and number of GPUs, selecting the batch size that achieves the lowest energy (e.g., energy per token, energy per response, depending on the context) among all tested batch sizes. This allows us to compare model and task differences without being confounded by hardware utilization differences.">minimum-energy configuration</abbr><sup id="fnref:minimum-energy-config"><a class="footnote-ref" href="#fn:minimum-energy-config">2</a></sup> of each model on B200 GPUs, which allows us to focus on model and task differences without being confounded by hardware utilization differences.
+Problem Solving generates on average 10x more output <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">tokens</abbr> than Text Conversation (mean 6,988 vs. 717).
+Additionally, longer output sequences stress memory capacity and prevent larger <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr>, increasing energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> due to lower GPU utilization.
+Since energy per response is energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> multiplied by the number of output <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">tokens</abbr>, these two factors multiply, resulting in Problem Solving consuming on average 25x more energy per response than Text Conversation (mean 4,625 J vs. 184 J).</p>
+<p><strong>Case study on Qwen 3 32B on 1x B200.</strong>
+Qwen 3 32B supports both reasoning and non-reasoning, enabling direct comparison on the same model.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th style="text-align: right;">Text Conversation</th>
+<th style="text-align: right;">Problem Solving</th>
+<th style="text-align: right;">Ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Max <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> (BS)</td>
+<td style="text-align: right;">512</td>
+<td style="text-align: right;">128</td>
+<td style="text-align: right;">0.25x</td>
+</tr>
+<tr>
+<td>Mean output <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">tokens</abbr></td>
+<td style="text-align: right;">627</td>
+<td style="text-align: right;">7,035</td>
+<td style="text-align: right;">11x</td>
+</tr>
+<tr>
+<td>Energy/<abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> @ BS 128</td>
+<td style="text-align: right;">0.209 J</td>
+<td style="text-align: right;">0.312 J</td>
+<td style="text-align: right;">1.5x</td>
+</tr>
+<tr>
+<td>Energy/<abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> @ max BS</td>
+<td style="text-align: right;">0.151 J</td>
+<td style="text-align: right;">0.312 J</td>
+<td style="text-align: right;">2.1x</td>
+</tr>
+<tr>
+<td>Energy/response</td>
+<td style="text-align: right;">95 J</td>
+<td style="text-align: right;">2,192 J</td>
+<td style="text-align: right;">23x</td>
+</tr>
+</tbody>
+</table>
+<p>Longer output sequences in Problem Solving increase the amount of KV cache memory usage per response, preventing larger <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr>.
+Therefore, when we compare energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> at each task's maximum <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>, Problem Solving is 2.1x higher.
+Even at the same <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> (128), longer sequences consume more energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> due to higher memory footprint.
+Finally, combining longer outputs and higher energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> results in 23x energy per response for Problem Solving for this model.</p>
+<div class="admonition takeaway">
+<p class="admonition-title">Takeaway</p>
+<p>Task type heavily influences energy consumption.
+Notably, Problem Solving (reasoning) uses on average 25x more energy per response than Text Conversation.
+This comes from 10x more output <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">tokens</abbr> combined with higher energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> due to memory pressure limiting <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>.</p>
+</div>
+<h3 id="multimodal-llm">Multimodal LLM</h3>
+<p>Multimodal LLMs (MLLMs) take images and/or videos alongside text as input and generate text responses.</p>
+<figure>
+<p><img alt="MLLM energy by modality" src="../../../assets/ml-energy-leaderboard-v3.0/section1-2-mllm-light.svg#only-light" />
+  <img alt="MLLM energy by modality" src="../../../assets/ml-energy-leaderboard-v3.0/section1-2-mllm-dark.svg#only-dark" />
+  </p>
+<figcaption>(a) shows three models from the Qwen 3 family across three modalities (minimum-energy configurations), and (b) shows how modality affects batch size and KV cache utilization for the 8B model, showing why energy per token increases. Text modality uses the text-only model (e.g., Qwen 3 8B), whereas Image and Video use the vision-language variant (e.g., Qwen 3 VL 8B).</figcaption>
+</figure>
+<p><strong>Multimodality can increase energy.</strong>
+The implications of multimodal inputs are threefold:</p>
+<ol>
+<li>Models run their modality encoder to convert inputs into multimodal <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">tokens</abbr>, which increases computation and memory operations and therefore energy consumption.</li>
+<li>In GPU memory-constrained scenarios, the modality encoder and the increase in input length increase memory usage, which can limit <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>.</li>
+<li>Multimodal inputs need to be preprocessed first on the CPU-side (e.g., converting raw image/video into tiles of pixels), which can take non-negligible time and become a bottleneck that further limits <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>.</li>
+</ol>
+<p>Indeed, when we compare <abbr title="For a model, task, GPU model, and number of GPUs, selecting the batch size that achieves the lowest energy (e.g., energy per token, energy per response, depending on the context) among all tested batch sizes. This allows us to compare model and task differences without being confounded by hardware utilization differences.">minimum-energy configurations</abbr> for different modalities, text + image inputs use 1.1-5.2x the energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> of text, while text + video inputs use 1.3-15.0x.<sup id="fnref:mllm-task-output-length"><a class="footnote-ref" href="#fn:mllm-task-output-length">3</a></sup></p>
+<p><strong>Case study on Qwen 3 (VL) 8B on 1x B200.</strong>
+We compare Qwen 3 8B on Text Conversation with Qwen 3 VL 8B on Image Chat and Video Chat tasks.
+For this smaller 8B model, the overheads of vision encoders and CPU-side preprocessing limit <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> significantly and underutilize the GPU.
+In particular, video inputs typically get converted to more vision <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">tokens</abbr> and are more expensive to preprocess on the CPU side, as shown by the much smaller <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> and higher energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr>.
+The drop in KV cache utilization as vision preprocessing overhead grows confirms that GPU memory was not the limiting factor---there was spare capacity for more <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">tokens</abbr>---but CPU-side vision preprocessing became a severe bottleneck that limited <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>.</p>
+<p>All in all, this is a case where GPU energy consumption is not just about the GPU; the entire system and the location of bottlenecks matter.<sup id="fnref:gpu-multimodal-processing"><a class="footnote-ref" href="#fn:gpu-multimodal-processing">4</a></sup>
+If CPU-side processing speed remains unchanged and only the GPU is upgraded, the GPU will only be more underutilized.
+In subsequent analyses, we do not include MLLMs because CPU-side bottlenecks make it difficult to isolate factors that impact GPU energy.</p>
+<div class="admonition takeaway">
+<p class="admonition-title">Takeaway</p>
+<p>Multimodal inputs cost 1.1-5.2x (image) and 1.3-15.0x (video) the energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> of text.
+CPU-side vision preprocessing can be a bottleneck that reduces <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> and increases energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr>.</p>
+</div>
+<h3 id="diffusion-models">Diffusion Models</h3>
+<p>We benchmarked diffusion models that generate images and videos from user text prompts.
+Diffusion is where model size is not the best predictor of energy consumption due to multiple <em>runtime</em> factors: number of inference (denoising) steps, output resolution, and number of frames (for video).</p>
+<figure>
+<p><img alt="Text-to-image energy" src="../../../assets/ml-energy-leaderboard-v3.0/section1-3-diffusion-light.svg#only-light" />
+  <img alt="Text-to-image energy" src="../../../assets/ml-energy-leaderboard-v3.0/section1-3-diffusion-dark.svg#only-dark" />
+  </p>
+<figcaption>Energy per image/video for diffusion models (minimum-energy configuration on B200). SD is short for Stable Diffusion.</figcaption>
+</figure>
+<p><strong>Text-to-image varies 20x across models.</strong>
+Models range from 0.6B to 12B parameters with 20-50 denoising steps.
+Notably, Hunyuan-DiT 1.2 (1.5B) consumes more energy than SD 3.5 Large (8.1B) despite fewer parameters, largely due to running 50 vs. 28 denoising steps.</p>
+<p><strong>Text-to-video can be very energy intensive.</strong>
+Generating a single video consumes 26 kJ to 1.16 MJ---one to two orders of magnitude more than images.
+CogVideoX 1.5 5B uses more energy than Wan 2.1 14B despite being smaller, largely because it generates at higher resolution (768x1360 vs. 480x832).
+HunyuanVideo reaches 1.16 MJ because it generates 129 frames at 720p, resulting in 4x higher energy than Wan 2.1 14B (13B vs. 14B).</p>
+<p>We used default runtime parameters (denoising steps, resolution, frames) for all models.
+Many of these parameters are <strong>controllable by users</strong>, enabling navigation of the time-energy-quality tradeoff space.
+We explored this in a previous benchmark release.</p>
+<div class="admonition takeaway">
+<p class="admonition-title">Takeaway</p>
+<p>Diffusion model energy depends on more than model size: number of denoising steps, output resolution, and frame count matter as much or more.
+Video generation can consume one to two orders of magnitude more energy than image generation.</p>
+</div>
+<h2 id="deeper-dive-into-energy">Deeper Dive into Energy</h2>
+<p>In this section, we measure and observe how different factors affect energy consumption.</p>
+<h3 id="batch-size">Batch Size</h3>
+<figure>
+<p><img alt="Batch size effect" src="../../../assets/ml-energy-leaderboard-v3.0/section2-1-batch-size-light.svg#only-light" />
+  <img alt="Batch size effect" src="../../../assets/ml-energy-leaderboard-v3.0/section2-1-batch-size-dark.svg#only-dark" />
+  </p>
+<figcaption>Energy per token, throughput, median ITL, and power trends against batch size for (a) DeepSeek R1 (Problem Solving) on 8x B200 and (b) Qwen 3 Coder 30B A3B (Code Completion) on 1x B200. Metrics normalized to % of maximum, except power which is normalized to % of GPU TDP.</figcaption>
+</figure>
+<p>The figure above shows the impact of <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> on energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr>, <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> generation throughput, median Inter-Token Latency (<abbr title="Inter-Token Latency. The time between receiving subsequent tokens in the response.">ITL</abbr>), and GPU power draw.
+Computing hardware typically achieves peak energy efficiency when fully utilized (the <a href="#static-power-wastage">Static Power Wastage</a> section will go deeper into this).
+Therefore, as <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> increases, energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> drops at first, then plateaus as GPU utilization approaches saturation.</p>
+<p>However, the energy efficiency gains of increasing <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> are not without tradeoffs.
+Latency (median <abbr title="Inter-Token Latency. The time between receiving subsequent tokens in the response.">ITL</abbr> in this analysis) increases with <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>, as there is strictly more work to do for each batch.
+Throughput also increases with <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>, but with diminishing returns as GPU utilization reaches saturation.
+Finally, power draw increases with <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>, as a larger portion of the GPU's compute and memory circuitry is actively utilized and drawing power.</p>
+<p>From energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> trends, we can see that DeepSeek R1 has not saturated GPU utilization even at the largest <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> that fits in memory, whereas Qwen 3 Coder approaches saturation around <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> 512.
+This explains the two models' throughput trends as well: DeepSeek R1 has a linearly increasing <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> throughput with <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> as GPU utilization keeps improving, whereas Qwen 3 Coder sees diminishing returns as it approaches saturation.
+We can see that these metrics move in tandem rather than in isolation, because they are all heavily coupled with latent factors like GPU utilization.</p>
+<div class="admonition takeaway">
+<p class="admonition-title">Takeaway</p>
+<p>Increasing <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> increases latency, power, and throughput, but can unlock 3-5x energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> reduction.</p>
+</div>
+<h3 id="model-size-and-architecture">Model Size and Architecture</h3>
+<p>With the <abbr title="A particular architecture for large language models where the MLP component is replaced with multiple smaller &quot;expert&quot; MLPs. During the forward pass, only a subset of these experts (proportion is fixed) are chosen to process that input. Compared to dense (non-MoE) models with the same total number of parameters, MoE models therefore run fewer computations per input.">Mixture-of-Experts</abbr> (MoE) architecture, the number of active parameters is as important as the total number of parameters in energy consumption.</p>
+<figure>
+<p><img alt="MoE energy efficiency" src="../../../assets/ml-energy-leaderboard-v3.0/section2-2-model-size-light.svg#only-light" />
+  <img alt="MoE energy efficiency" src="../../../assets/ml-energy-leaderboard-v3.0/section2-2-model-size-dark.svg#only-dark" />
+  </p>
+<figcaption>Energy/token by active parameters of Problem Solving models with the minimum-energy configuration on B200 GPUs.</figcaption>
+</figure>
+<p>The figure above compares models from the Qwen 3 family on the Problem Solving task using B200 GPUs: two MoE variants (30B A3B and 235B A22B) and three dense variants (8B, 14B, and 32B).
+For dense models, energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> increases with the total number of parameters.
+However, when we include MoE models, we see that their energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> is much lower than what a dense model of similar total number of parameters would consume.
+For instance, the energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> of 30B A3B is 3.56x lower than that of 32B, despite having a similar total number of parameters.
+However, this is not to say that active parameters are now the only factor.
+235B A22B consumes more energy than 32B as it needs to use more GPUs to fit all parameters in GPU memory, though it is still far less than what a dense 235B model would consume.</p>
+<div class="admonition takeaway">
+<p class="admonition-title">Takeaway</p>
+<p>MoE models consume less energy compared to dense models of similar total number of parameters, making active parameters an important property for energy consumption.
+However, total parameters, which affect memory requirements, still play a role.</p>
+</div>
+<h3 id="gpu-generation">GPU Generation</h3>
+<p>One way to compare GPU models (B200 vs. H100) is to pick the <abbr title="For a model, task, GPU model, and number of GPUs, selecting the batch size that achieves the lowest energy (e.g., energy per token, energy per response, depending on the context) among all tested batch sizes. This allows us to compare model and task differences without being confounded by hardware utilization differences.">minimum-energy configuration</abbr> on each GPU at the same latency constraint.</p>
+<figure>
+<p><img alt="B200 vs H100" src="../../../assets/ml-energy-leaderboard-v3.0/section2-3-b200-vs-h100-light.svg#only-light" />
+  <img alt="B200 vs H100" src="../../../assets/ml-energy-leaderboard-v3.0/section2-3-b200-vs-h100-dark.svg#only-dark" />
+  </p>
+<figcaption>B200 vs H100 energy comparison at latency constraints of 100 ms median ITL for LLMs and 30 s generation latency for Text to Image. Percentage of B200 energy reduction is annotated.</figcaption>
+</figure>
+<p>Energy reduction can vary significantly by model and task.
+Sometimes it is significantly better (e.g., 82% energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> reduction for Qwen 3 235B A22B Thinking on Problem Solving), other times marginal or even worse, as we will see below.</p>
+<p>To get a better overall picture, we compare the two GPU models with three different latency constraints: 50/100/250 ms median <abbr title="Inter-Token Latency. The time between receiving subsequent tokens in the response.">ITL</abbr> for LLMs, 10/30/60 s generation latency for Text to Image, 100/500/1000 s for Text to Video.</p>
+<p><strong>LLM.</strong>
+Across all three median <abbr title="Inter-Token Latency. The time between receiving subsequent tokens in the response.">ITL</abbr> constraints, B200 wins 88% (63/72) of comparisons with a median 35% energy reduction (ranging from 53% more to 82% less).
+A few notable exceptions happen at tight latency constraints.
+B200's large VRAM allows fitting large models on fewer GPUs, avoiding inter-GPU communication overhead.
+However, at tight latency constraints, using more H100 GPUs with a higher degree of parallelism can be more energy efficient.
+For example, at the 50 ms constraint, Qwen 3 30B A3B Thinking uses 53% less energy on 2x H100 (<abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> 128) than on 1x B200 (<abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> 64).
+Similarly, Qwen 3 235B A22B Instruct FP8 uses 33% less energy on 8x H100 (<abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> 192) than on 2x B200 (<abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> 64).
+At relaxed constraints (&gt; 50 ms), B200 wins as communication overhead is smaller and higher <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr> become feasible.
+We will look deeper into multi-GPU scaling in the <a href="#multi-gpu-scaling">Multi-GPU Scaling</a> section.</p>
+<p><strong>Diffusion.</strong>
+For Text to Image, across all three latency constraints, B200 wins 86% (18/21) of comparisons with a median 15% energy reduction (ranging from 4% more to 23% less).
+Text to Video is also similar, with B200 winning 79% (11/14) of comparisons with a median 4% energy reduction (ranging from 6% more to 8% less).
+Cases where H100 wins (e.g., Stable Diffusion 3.5 Medium) are generally when the model is small enough to comfortably fit in one H100 GPU, meaning that it will underutilize a B200.</p>
+<p>We performed matched latency constraint comparisons, but we note that B200 would be capable of delivering lower latency than H100 when energy is not a concern due to its higher compute and memory throughput.</p>
+<div class="admonition takeaway">
+<p class="admonition-title">Takeaway</p>
+<p>B200 achieves lower energy than H100 in 79-88% of comparisons at matched latency constraints.
+For tight LLM latency constraints, H100 can sometimes consume less energy by using more GPUs with higher parallelism to reduce latency.
+For Diffusion, B200 generally wins, unless the model is small.</p>
+</div>
+<h3 id="precision">Precision</h3>
+<p>FP8 quantization reduces model memory footprint and allows inference to leverage FP8 Tensor Cores with higher compute throughput.
+However, it also adds overhead from extra operations like input/activation quantization, dequantization, and scaling.
+We observe this tradeoff playing out differently at different <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr>.</p>
+<figure>
+<p><img alt="Precision comparison" src="../../../assets/ml-energy-leaderboard-v3.0/section2-4-precision-light.svg#only-light" />
+  <img alt="Precision comparison" src="../../../assets/ml-energy-leaderboard-v3.0/section2-4-precision-dark.svg#only-dark" />
+  </p>
+<figcaption>Qwen 3 235B A22B (Text Conversation) on 8x H100. FP8 loses at batch size 8-16, then wins at batch sizes from 32. The dashed vertical lines mark the crossover point.</figcaption>
+</figure>
+<p><strong>FP8 wins at larger <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr>.</strong>
+The figure above shows the energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> and median <abbr title="Inter-Token Latency. The time between receiving subsequent tokens in the response.">ITL</abbr> of Qwen 3 235B A22B (Text Conversation) on 8x H100 in both BF16 and FP8 across <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr>.
+At smaller <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr>, FP8 loses on both energy and latency due to (1) the overhead of extra operations (especially those that have not been fused into matrix multiplication), and (2) underutilization of the GPU, which prevents FP8 from leveraging its compute throughput advantage.
+If we compare FP8 and BF16 for all other models and tasks, we see a similar trend:</p>
+<center><b>Energy</b></center>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Batch size</th>
+<th style="text-align: left;">FP8 wins</th>
+<th style="text-align: left;">Range</th>
+<th style="text-align: left;">Median</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">8-16</td>
+<td style="text-align: left;">0/7</td>
+<td style="text-align: left;">+13 to +56%</td>
+<td style="text-align: left;">+30%</td>
+</tr>
+<tr>
+<td style="text-align: left;">17-64</td>
+<td style="text-align: left;">6/13</td>
+<td style="text-align: left;">-12 to +32%</td>
+<td style="text-align: left;">+1%</td>
+</tr>
+<tr>
+<td style="text-align: left;">65-256</td>
+<td style="text-align: left;">11/12</td>
+<td style="text-align: left;">-29 to 0%</td>
+<td style="text-align: left;">-11%</td>
+</tr>
+</tbody>
+</table>
+<center><b>Latency</b></center>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Batch size</th>
+<th style="text-align: left;">FP8 wins</th>
+<th style="text-align: left;">Range</th>
+<th style="text-align: left;">Median</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">8-16</td>
+<td style="text-align: left;">1/7</td>
+<td style="text-align: left;">-5 to +26%</td>
+<td style="text-align: left;">+7%</td>
+</tr>
+<tr>
+<td style="text-align: left;">17-64</td>
+<td style="text-align: left;">11/13</td>
+<td style="text-align: left;">-23 to +12%</td>
+<td style="text-align: left;">-12%</td>
+</tr>
+<tr>
+<td style="text-align: left;">65-256</td>
+<td style="text-align: left;">11/12</td>
+<td style="text-align: left;">-18 to +3%</td>
+<td style="text-align: left;">-11%</td>
+</tr>
+</tbody>
+</table>
+<p>At <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> 8-16, FP8 has higher energy (up to 56% more) and higher latency (up to 26% slower).
+As we grow <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>, we see FP8 starting to win on latency earlier, and then on energy as well.
+This is, at least in part, because GPUs are capable of delivering more theoretical FP8 compute throughput than BF16.
+Thus, at the same <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>, FP8 underutilizes the GPU more, leading to higher energy consumption until <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> is large enough to saturate the GPU.</p>
+<p><strong>Qwen 3 Coder 480B A35B.</strong>
+This model is an exception; due to a limitation in vLLM at the time of benchmarking, the FP8 model had to run attention with data parallelism, while BF16 could run attention with tensor parallelism.<sup id="fnref:vllm-qwen-3-coder-fp8-dp"><a class="footnote-ref" href="#fn:vllm-qwen-3-coder-fp8-dp">5</a></sup>
+This made FP8 consistently consume more time and energy across all <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr>.
+Attention data parallelism incurs load imbalance between GPUs that are assigned very different sequence lengths (e.g., some running long prefills whereas others run decode).
+Since the straggler GPU bottlenecks the entire batch, this can lead to significant latency overhead.
+Furthermore, the non-straggler GPUs do nothing and waste static power (see <a href="#static-power-wastage">Static Power Wastage</a>) waiting for the straggler, leading to even higher energy consumption as well.</p>
+<div class="admonition takeaway">
+<p class="admonition-title">Takeaway</p>
+<p>At smaller <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr> (8-16), FP8 can consume more time and/or energy than BF16.
+FP8 gains start to appear at larger <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr>.</p>
+</div>
+<h3 id="multi-gpu-scaling">Multi-GPU Scaling</h3>
+<p>We can execute the same model on different numbers of GPUs, which affects both latency and energy consumption.</p>
+<figure>
+<p><img alt="Multi-GPU scaling" src="../../../assets/ml-energy-leaderboard-v3.0/section2-5-multi-gpu-light.svg#only-light" />
+  <img alt="Multi-GPU scaling" src="../../../assets/ml-energy-leaderboard-v3.0/section2-5-multi-gpu-dark.svg#only-dark" />
+  </p>
+<figcaption>Time-energy tradeoffs of GPT-OSS 120B (Problem Solving). In both cases, scaling from 1 GPU to 2 GPUs at fixed batch size trades energy for time. In (b), 1 GPU is limited to batch size 64, while 2 GPUs unlock batch size 2,048 with less energy.</figcaption>
+</figure>
+<p>The figure above shows GPT OSS 120B on B200 and H100 with 1 and 2 GPUs.
+The plots are time-energy tradeoff curves, which are useful in comparing different configurations:</p>
+<ul>
+<li>The right-end of each curve represents the <abbr title="For a model, task, GPU model, and number of GPUs, selecting the batch size that achieves the lowest energy (e.g., energy per token, energy per response, depending on the context) among all tested batch sizes. This allows us to compare model and task differences without being confounded by hardware utilization differences.">minimum-energy configuration</abbr> for that GPU model and count.</li>
+<li>A vertical line at one's target latency finds <abbr title="For a model, task, GPU model, and number of GPUs, selecting the batch size that achieves the lowest energy (e.g., energy per token, energy per response, depending on the context) among all tested batch sizes. This allows us to compare model and task differences without being confounded by hardware utilization differences.">minimum-energy configurations</abbr> that meet the latency constraint.</li>
+<li>Jumping between curves following points with the same <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> shows the effect of GPU model and count.</li>
+</ul>
+<p><strong>At the same <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>, more GPUs trade energy for latency.</strong>
+In general, increasing parallelism with more GPUs reduces latency but also increases energy at the same <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> because (1) latency does not decrease linearly due to communication overhead, and (2) less compute per GPU can lead to lower GPU utilization.
+Across B200 configurations, adding GPUs at the same <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> <em>always</em> increases energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> and reduces latency in 81% of cases.
+Similarly, across H100 configurations, energy increases in 93% of the cases and latency <em>always</em> decreases.</p>
+<p><strong>Memory capacity-bound cases unlock energy savings with more GPUs.</strong>
+On top of the above, in cases where adding more GPUs <em>enables</em> larger <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr> due to increased aggregate memory capacity, we can see energy reductions.
+For GPT OSS 120B on 1x B200 with a 180 GB VRAM, the model already fits at high <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr> on 1 GPU (<abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> 3,072), so 2 GPUs only add overhead without enabling lower energy.
+On 1x H100 with an 80 GB VRAM, however, the server is limited to <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> 64, while 2 GPUs unlock <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> 2,048 and achieve 68% lower minimum energy.
+Thus, the model's total parameter memory footprint relative to the GPU's memory capacity is an important factor for whether multi-GPU scaling can reduce energy.</p>
+<p><strong>Case study: Qwen 3 235B A22B Thinking FP8 on Problem Solving.</strong>
+As an extra case study, it is interesting to examine Qwen 3 235B A22B Thinking FP8 on Problem Solving with time-energy tradeoff frontiers for four sets of configurations (2x and 4x B200, 2x and 8x H100).</p>
+<figure>
+<p><img alt="Time-energy tradeoff" src="../../../assets/ml-energy-leaderboard-v3.0/section2-5-235b-tradeoff-light.svg#only-light" />
+  <img alt="Time-energy tradeoff" src="../../../assets/ml-energy-leaderboard-v3.0/section2-5-235b-tradeoff-dark.svg#only-dark" />
+  </p>
+<figcaption>Time-energy tradeoff for Qwen 3 235B A22B Thinking FP8 on Problem Solving across B200 and H100 with different GPU counts. Each point is annotated with its batch size.</figcaption>
+</figure>
+<p>The 4x B200 curve (blue) Pareto-dominates, and also achieves the lowest possible energy (~0.4 J/<abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr>) by unlocking large <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr>.
+2x B200 (red) consumes less energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> compared to 4x B200 (blue) at the same <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> at the cost of higher latency (as expected), and fails to scale to large <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr> due to limited memory capacity.
+The two H100 configurations (purple and green) are right in the middle of the B200 curves; despite being a whole generation older, H100 is still competitive!</p>
+<div class="admonition takeaway">
+<p class="admonition-title">Takeaway</p>
+<p>At the same <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>, more GPUs typically reduce latency but increase energy.
+When adding GPUs enables larger <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr>, energy can be reduced, but only if serving was previously limited by memory capacity.
+H100 can still be competitive with B200 in terms of energy, especially when latency constraints are tight.</p>
+</div>
+<h2 id="reasoning-about-energy-consumption">Reasoning about Energy Consumption</h2>
+<p>In the previous sections, we presented empirical observations on energy consumption, but how can we act on them?
+In this section, we outline core mechanisms that govern energy consumption, with the goal of providing tools to <em>explain and reason about</em> energy consumption.</p>
+<h3 id="model-runtime-and-hardware-factors">Model, Runtime, and Hardware Factors</h3>
+<p>Many factors across the whole system (hardware, software, and algorithm) affect energy consumption.
+Some of the key mechanisms are powerful but still straightforward.
+For instance, more computation generally means more energy consumption.
+As we have seen, diffusion models' energy increases with more denoising steps and higher output resolution (<a href="#diffusion-models">Diffusion Models</a>), MoE models activate fewer parameters per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> than dense models (<a href="#model-size-and-architecture">Model Size and Architecture</a>), and FP8 reduces circuit activity via lower-precision arithmetic (<a href="#precision">Precision</a>).
+These are examples of choices at the runtime- and model-level directly affecting the amount of computation, and thus energy consumption.</p>
+<p>Another instance is hardware efficiency improvements over generations.
+Newer architectures typically deliver more operations per joule via various microarchitectural improvements and technology node shrinks.
+We have indeed seen that B200 generally consumes less energy than H100 (<a href="#gpu-generation">GPU Generation</a>).</p>
+<h3 id="static-power-wastage">Static Power Wastage</h3>
+<p>The power consumption of computing hardware, including GPUs, has two components: <em>static power</em> (consumed regardless of activity at all times) and <em>dynamic power</em> (reflects compute and memory activity).
+Let us consider a case where we executed some computation on a GPU, and only 60% of the GPU's compute units were utilized over the entire execution time.
+Here, the GPU will consume static power for the entire execution time, regardless of how well the GPU is utilized.
+Thus, 40% of the time the GPU is consuming static power while making little progress, effectively wasting energy.
+This is how low utilization increases static power wastage and thus energy consumption for the same amount of work.</p>
+<p>However, one of the most critical factors in GPU utilization is, in fact, not the GPU, but the rest of the system.
+That is, we want the GPU to be the sole bottleneck, not other system components.
+When CPU processing, network communication, disk I/O, or other parts of the system block GPU progress, the GPU does not have enough work to saturate itself or is even idle, wasting static power.
+Multimodal LLMs (<a href="#multimodal-llm">Multimodal LLM</a>) were a prime example: CPU-side vision preprocessing became a bottleneck that limited <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>, leaving the GPU underutilized despite having capacity for more concurrent requests.
+The result was higher energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr>---not because of the GPU, but because of the surrounding system.</p>
+<p>Another important factor is arithmetic intensity, i.e., the ratio of compute operations to the amount of memory movement.
+When arithmetic intensity is low, the GPU may be waiting on memory fetches more often than performing computations, leading to lower GPU utilization and higher static power wastage.
+We observed this for precision (<a href="#precision">Precision</a>), where FP8 computations require extra operations that are not as arithmetically intensive as matrix multiplications.
+Thus, on smaller <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr>, both FP8 extra operations and the smaller matrix multiplications had lower arithmetic intensity, leading to lower GPU utilization and offsetting savings from lower-precision arithmetic.</p>
+<p>This has interactions with earlier factors as well.
+For instance, upgrading to a newer hardware generation expecting better energy efficiency may not yield the expected benefits, or even worsen, if bottlenecks in the rest of the system were preventing the GPU from being fully utilized.</p>
+<h3 id="time-energy-tradeoff-frontier">Time-Energy Tradeoff Frontier</h3>
+<p>There are many cases where there is a time-energy tradeoff frontier for the same amount of work.
+When the GPU ideally <em>is</em> the bottleneck, largely ruling out static power wastage (<a href="#static-power-wastage">Static Power Wastage</a>), we can navigate the time-energy tradeoff frontier through configuration choices.<sup id="fnref:tradeoff-note"><a class="footnote-ref" href="#fn:tradeoff-note">6</a></sup>
+In our analysis, the factors that govern this frontier are:</p>
+<ul>
+<li><strong>Batch size:</strong> This is the primary knob that <em>shapes</em> and <em>navigates</em> the time-energy frontier.</li>
+<li><strong>Memory capacity:</strong> Larger batches consume more memory. When GPU memory is saturated, we hit a ceiling, like we have seen for reasoning models in the <a href="#llm">LLM</a> section. In other words, memory capacity <em>bookends</em> the frontier.</li>
+<li><strong>Application constraints:</strong> Applications may come with latency deadlines or energy budgets. Larger batches increase per-request latency and reduce energy per work. Application-level latency and/or energy budgets allow us to <em>select</em> a point on the frontier.</li>
+</ul>
+<p>Batch size does not have to be the only knob that shapes the time-energy tradeoff frontier.
+For instance, the number of GPUs (<a href="#multi-gpu-scaling">Multi-GPU Scaling</a>) can be effective, where adding GPUs increases aggregate memory capacity and also enables larger <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch sizes</abbr> that were not previously possible.
+While not explored in this post, GPU power limit and core frequency are also knobs that shape the frontier.</p>
+<h3 id="extending-to-ai-datacenters">Extending to AI Datacenters</h3>
+<p>Our analysis so far has focused on energy consumption, but power is also an important metric to consider.
+Indeed, many AI datacenters today are <strong>power-constrained</strong>.
+Power availability caps the datacenter's power budget---either from the electricity grid (where drawing too much may not be approved or may cause reliability issues) or from on-site generation like natural gas and batteries (which take <em>years</em> to build).</p>
+<p>With power becoming the bottleneck resource, <strong>throughput per watt</strong> (e.g., <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">tokens</abbr> per second per watt, images per second per watt) is a critical metric for AI datacenter operators.
+For instance, <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">tokens</abbr> per second per watt can tell the operator how many average ChatGPT users the datacenter can serve within its power budget.</p>
+<div class="arithmatex">\[
+\text{Throughput per Watt} = \frac{\text{Throughput}}{\text{Power}} = \frac{\text{Work} / \text{Time}}{\text{Energy} / \text{Time}} = \frac{\text{Work}}{\text{Energy}}
+\]</div>
+<p>Throughput per watt is essentially the inverse of energy consumption per fixed work (e.g., energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr>, energy per image).
+Thus, optimizing energy consumption for the given work improves throughput per watt, closing the reasoning loop.</p>
+<figure>
+<p><img alt="Power and energy" src="../../../assets/ml-energy-leaderboard-v3.0/section3-power-light.svg#only-light" />
+  <img alt="Power and energy" src="../../../assets/ml-energy-leaderboard-v3.0/section3-power-dark.svg#only-dark" />
+  </p>
+<figcaption>Energy and throughput/watt for four models on B200 with varying batch size. Note the log scale Y axis in (a).</figcaption>
+</figure>
+<p>As <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> increases, energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> decreases and throughput per watt increases, both eventually plateauing as the GPU reaches saturation.</p>
+<h3 id="putting-everything-together">Putting Everything Together</h3>
+<figure>
+<p><img alt="Reasoning framework" src="../../../assets/ml-energy-leaderboard-v3.0/section3-reasoning-framework-light.svg#only-light" />
+  <img alt="Reasoning framework" src="../../../assets/ml-energy-leaderboard-v3.0/section3-reasoning-framework-dark.svg#only-dark" />
+  </p>
+<figcaption>A framework for reasoning about inference energy consumption in our analysis. Gray boxes are properties and knobs, blue boxes are latent factors, and orange boxes are the end metrics we observe from measurements and would like to understand and explain.</figcaption>
+</figure>
+<p>The figure above summarizes the structure of reasoning we have developed.
+Gray boxes are <em>properties</em> and <em>low-level knobs</em> of the algorithm, software, and hardware.
+Blue boxes represent <em>latent</em> variables that mediate between configurations and outcomes.
+Orange boxes show the end metrics we measure from benchmarks and ultimately want to understand.</p>
+<p>Causal structures like this show how different factors interact and propagate to affect the end metric and provide a framework for explaining empirical observations.
+When we observe unexpected energy behavior, we can trace through these factors to identify the root cause---whether it is memory constraints limiting <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>, CPU bottlenecks causing GPU underutilization, or compute volume increasing due to model choices.
+This also enables reasoning about optimization opportunities and hypothesizing about how they will affect energy consumption.</p>
+<div class="admonition takeaway">
+<p class="admonition-title">Takeaway</p>
+<p>Energy consumption is governed by computation amount, hardware efficiency, GPU utilization, and the time-energy tradeoff frontier.
+System design choices---eliminating non-GPU bottlenecks and navigating the frontier via <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> and memory capacity---are key levers for optimization.
+Throughput per watt is the inverse of energy per output; optimizing one optimizes the other.</p>
+</div>
+<h2 id="summing-up">Summing Up</h2>
+<p>Each section already has key takeaways boxed.</p>
+<p>Things are more dynamic, complex, and nuanced than ever before in ML energy consumption. Without even thinking about energy, <em>time</em> itself is already so; throwing in energy clearly doesn't help!</p>
+<p>Therefore, <strong>we must measure</strong>. If you take away only one thing from this post, let it be that. Back-of-the-envelope estimates and rules of thumb only get you so far.</p>
+<p>And, it is very much possible to measure! We hope <a href="https://github.com/ml-energy/benchmark">The ML.ENERGY Benchmark</a> is a useful tool for you to measure, understand, and ultimately optimize energy consumption in your models, tasks, and systems. And we hope <a href="https://ml.energy/leaderboard">The ML.ENERGY Leaderboard</a> provides useful reference points for numerous downstream use cases: model selection, system design, deployment planning, policymaking, and more.</p>
+<p>Finally, we welcome your feedback, questions, and suggestions. We're always looking forward to hearing from the community and collaborating. Find us at <a href="https://ml.energy">The ML.ENERGY Initiative</a> homepage.</p>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:software-setup">
+<p>We used vLLM 0.11.1 for LLM/MLLMs and xDiT 0.4.5 for diffusion models.&#160;<a class="footnote-backref" href="#fnref:software-setup" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:minimum-energy-config">
+<p>The configuration (e.g., <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr>, number of GPUs) that achieves the lowest energy consumption for the model.&#160;<a class="footnote-backref" href="#fnref:minimum-energy-config" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mllm-task-output-length">
+<p>One caveat of this cross-modality comparison is that, as we have seen in the LLM section, different tasks can have different output lengths that affect energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr>. For the models we compared, Text Conversation, Image Chat, and Video Chat have average output lengths of 808, 944, and 392 <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">tokens</abbr>, respectively. This isn't as large as the difference between Text Conversation and Problem Solving and shouldn't affect energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> as much as that case, but Video Chat's shorter output length (which allows requests to finish faster and reduces <abbr title="The number of requests running concurrently. For LLM and MLLMs with variable number of requests running over time, batch size means the maximum number of requests (`max_num_seqs`) configured for the server. For diffusion models, batch size is exactly the number of items (e.g., images, videos) being generated together.">batch size</abbr> when the CPU is the bottleneck) may have increased energy per <abbr title="LLMs understand and generate text in units of &quot;tokens,&quot; which can be words or parts of words. It depends on the model, but a token is roughly 0.75 words on average.">token</abbr> compared to Image Chat and Text Conversation.&#160;<a class="footnote-backref" href="#fnref:mllm-task-output-length" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+<li id="fn:gpu-multimodal-processing">
+<p>There are some proposals to run vision preprocessing on the GPU itself (e.g., <a href="https://github.com/vllm-project/vllm/issues/21995">vLLM #21995</a>), which can alleviate CPU-side bottlenecks but instead shift compute more to the GPU, which will likely introduce its own interesting tradeoffs.&#160;<a class="footnote-backref" href="#fnref:gpu-multimodal-processing" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+</li>
+<li id="fn:vllm-qwen-3-coder-fp8-dp">
+<p>Standard parallelization methods used for LLMs: MoE models use expert parallelism with attention tensor parallelism; dense models use Tensor Parallelism for both MLP and attention. For Qwen 3 Coder 480B A35B FP8, see <a href="https://github.com/vllm-project/recipes/blob/a86549479f2c38ac20b96483e7aacd128e3a40b2/Qwen/Qwen3-Coder-480B-A35B.md#fp8-models">vLLM Recipes</a>; last accessed 2024-12-26.&#160;<a class="footnote-backref" href="#fnref:vllm-qwen-3-coder-fp8-dp" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+</li>
+<li id="fn:tradeoff-note">
+<p>When the GPU is being underutilized, a proper time-energy <em>tradeoff</em> frontier may not exist, as both time and energy can be reduced by improving GPU utilization.&#160;<a class="footnote-backref" href="#fnref:tradeoff-note" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
+
+
+
+
+
+
+
+  
+  
+
+
+
+  
+
+
+  
+
+
+
+      
+    </article>
+  </div>
+
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+<div class="newsletter-signup">
+  <div class="newsletter-content">
+    <h3>Stay Updated</h3>
+    <p>Subscribe to our newsletter for the latest ML energy research.</p>
+    <form
+      action="https://buttondown.com/api/emails/embed-subscribe/ml-energy"
+      method="post"
+      class="newsletter-form"
+    >
+      <input type="email" name="email" placeholder="Enter your email" required />
+      <button type="submit">Subscribe</button>
+    </form>
+  </div>
+</div>
+
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2023-2026 The ML.ENERGY Initiative
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://ml.energy/blog/feed_rss_created.xml" target="_blank" rel="noopener" title="ml.energy" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.18 15.64a2.18 2.18 0 0 1 2.18 2.18C8.36 19 7.38 20 6.18 20 5 20 4 19 4 17.82a2.18 2.18 0 0 1 2.18-2.18M4 4.44A15.56 15.56 0 0 1 19.56 20h-2.83A12.73 12.73 0 0 0 4 7.27zm0 5.66a9.9 9.9 0 0 1 9.9 9.9h-2.83A7.07 7.07 0 0 0 4 12.93z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "navigation.sections", "navigation.instant", "navigation.instant.prefetch", "content.tooltips", "content.code.copy", "announce.dismiss"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../../assets/js/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
