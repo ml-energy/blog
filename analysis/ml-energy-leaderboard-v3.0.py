@@ -171,7 +171,7 @@ def section1_1_llm_tokens() -> None:
         """Per-model minimum-energy configuration on B200."""
         return {
             nick: min(group, key=lambda r: r.energy_per_token_joules)
-            for nick, group in runs.gpu("B200").group_by("nickname").items()
+            for nick, group in runs.gpu_model("B200").group_by("nickname").items()
         }
 
     gpqa_by_model = get_min_energy_runs(gpqa_runs)
@@ -187,8 +187,8 @@ def section1_1_llm_tokens() -> None:
 
     # Case study: Qwen 3 32B on 1x B200 (blog Table 1)
     model = "Qwen 3 32B"
-    gpqa_32b = list(gpqa_runs.nickname(model).gpu("B200").num_gpus(1))
-    chat_32b = list(chat_runs.nickname(model).gpu("B200").num_gpus(1))
+    gpqa_32b = list(gpqa_runs.nickname(model).gpu_model("B200").num_gpus(1))
+    chat_32b = list(chat_runs.nickname(model).gpu_model("B200").num_gpus(1))
     gpqa_max = max(gpqa_32b, key=lambda r: r.max_num_seqs)
     chat_max = max(chat_32b, key=lambda r: r.max_num_seqs)
     same_batch = gpqa_max.max_num_seqs
@@ -280,7 +280,7 @@ def section1_2_mllm() -> None:
     }
 
     def get_min_energy_run(runs: LLMRuns, model: str, num_gpus: int | None = None) -> LLMRun | None:
-        filtered = runs.nickname(model).gpu("B200")
+        filtered = runs.nickname(model).gpu_model("B200")
         if num_gpus is not None:
             filtered = filtered.num_gpus(num_gpus)
         if not filtered:
@@ -292,9 +292,9 @@ def section1_2_mllm() -> None:
     def get_common_gpu_count(text_runs: LLMRuns, img_runs: LLMRuns, vid_runs: LLMRuns,
                               text_model: str, vlm_model: str) -> int | None:
         """Find the GPU count where all three modalities have B200 runs."""
-        txt_gpus = {r.num_gpus for r in text_runs.nickname(text_model).gpu("B200")}
-        img_gpus = {r.num_gpus for r in img_runs.nickname(vlm_model).gpu("B200")}
-        vid_gpus = {r.num_gpus for r in vid_runs.nickname(vlm_model).gpu("B200")}
+        txt_gpus = {r.num_gpus for r in text_runs.nickname(text_model).gpu_model("B200")}
+        img_gpus = {r.num_gpus for r in img_runs.nickname(vlm_model).gpu_model("B200")}
+        vid_gpus = {r.num_gpus for r in vid_runs.nickname(vlm_model).gpu_model("B200")}
         common = txt_gpus & img_gpus & vid_gpus
         if not common:
             return None
@@ -328,9 +328,9 @@ def section1_2_mllm() -> None:
     # Average output lengths (blog footnote)
     text_models = set(vlm_to_text_map.values())
     vlm_models = set(vlm_to_text_map.keys())
-    text_lens = text_chat.nickname(*text_models).data.avg_output_len
-    image_lens = image_chat.nickname(*vlm_models).data.avg_output_len
-    video_lens = video_chat.nickname(*vlm_models).data.avg_output_len
+    text_lens = [r.avg_output_len for r in text_chat.nickname(*text_models)]
+    image_lens = [r.avg_output_len for r in image_chat.nickname(*vlm_models)]
+    video_lens = [r.avg_output_len for r in video_chat.nickname(*vlm_models)]
     print(f"Avg output lengths: Text {sum(text_lens)/len(text_lens):.0f}, "
           f"Image {sum(image_lens)/len(image_lens):.0f}, "
           f"Video {sum(video_lens)/len(video_lens):.0f}")
@@ -500,7 +500,7 @@ def _best_per_model(runs: DiffusionRuns) -> list[DiffusionRun]:
 
 
 def _analyze_text_to_image() -> list[DiffusionRun]:
-    results = _best_per_model(_diff().task("text-to-image").gpu("B200"))
+    results = _best_per_model(_diff().task("text-to-image").gpu_model("B200"))
     for r in results:
         if r.inference_steps is None:
             raise ValueError(f"Missing inference_steps for {r.nickname}")
@@ -511,7 +511,7 @@ def _analyze_text_to_image() -> list[DiffusionRun]:
 
 
 def _analyze_text_to_video() -> list[DiffusionRun]:
-    results = _best_per_model(_diff().task("text-to-video").gpu("B200"))
+    results = _best_per_model(_diff().task("text-to-video").gpu_model("B200"))
     print(f"Text-to-video range: {results[0].energy_per_generation_joules/1000:.0f} kJ to "
           f"{results[-1].energy_per_generation_joules/1000:.0f} kJ")
     return results
@@ -523,13 +523,13 @@ def section2_1_batch_size() -> None:
 
     gpqa_runs = _llm().task("gpqa")
     r1_configs = sorted(
-        gpqa_runs.nickname("DeepSeek R1").gpu("B200").num_gpus(8).batch(min=MIN_BATCH_SIZE),
+        gpqa_runs.nickname("DeepSeek R1").gpu_model("B200").num_gpus(8).max_num_seqs(min=MIN_BATCH_SIZE),
         key=lambda r: r.max_num_seqs,
     )
 
     fim_runs = _llm().task("sourcegraph-fim")
     coder_configs = sorted(
-        fim_runs.nickname("Qwen 3 Coder 30B A3B").gpu("B200").num_gpus(1).batch(min=MIN_BATCH_SIZE),
+        fim_runs.nickname("Qwen 3 Coder 30B A3B").gpu_model("B200").num_gpus(1).max_num_seqs(min=MIN_BATCH_SIZE),
         key=lambda r: r.max_num_seqs,
     )
 
@@ -616,7 +616,7 @@ def section2_2_moe_energy() -> None:
 
     selected_runs: list[LLMRun] = []
     for model, gpu, n_gpus in target_configs:
-        filtered = gpqa_runs.nickname(model).gpu(gpu).num_gpus(n_gpus).precision("bfloat16")
+        filtered = gpqa_runs.nickname(model).gpu_model(gpu).num_gpus(n_gpus).precision("bfloat16")
         if not filtered:
             continue
         selected_runs.append(min(filtered, key=lambda r: r.energy_per_token_joules))
@@ -983,14 +983,14 @@ def section2_5_multi_gpu_scaling() -> None:
     print_header("SECTION 2.5: Multi-GPU Scaling")
 
     gpqa_runs = _llm().task("gpqa")
-    model_runs = gpqa_runs.nickname("GPT OSS 120B").gpu("B200")
+    model_runs = gpqa_runs.nickname("GPT OSS 120B").gpu_model("B200")
 
     gpu1_runs = sorted(
-        model_runs.num_gpus(1).batch(min=MIN_BATCH_SIZE),
+        model_runs.num_gpus(1).max_num_seqs(min=MIN_BATCH_SIZE),
         key=lambda r: r.max_num_seqs,
     )
     gpu2_runs = sorted(
-        model_runs.num_gpus(2).batch(min=MIN_BATCH_SIZE),
+        model_runs.num_gpus(2).max_num_seqs(min=MIN_BATCH_SIZE),
         key=lambda r: r.max_num_seqs,
     )
     assert len(gpu1_runs) == 9, f"Expected 9 GPT OSS 120B B200 1-GPU configs, got {len(gpu1_runs)}"
@@ -1025,13 +1025,13 @@ def section2_5_multi_gpu_scaling() -> None:
             print(f"{gpu_type}: same batch + more GPUs -> energy increases {energy_up}/{total} ({100*energy_up/total:.0f}%), "
                   f"latency decreases {latency_down}/{total} ({100*latency_down/total:.0f}%)")
 
-    h100_model_runs = all_runs.nickname("GPT OSS 120B").gpu("H100")
+    h100_model_runs = all_runs.nickname("GPT OSS 120B").gpu_model("H100")
     h100_gpu1_runs = sorted(
-        h100_model_runs.num_gpus(1).batch(min=MIN_BATCH_SIZE),
+        h100_model_runs.num_gpus(1).max_num_seqs(min=MIN_BATCH_SIZE),
         key=lambda r: r.max_num_seqs,
     )
     h100_gpu2_runs = sorted(
-        h100_model_runs.num_gpus(2).batch(min=MIN_BATCH_SIZE),
+        h100_model_runs.num_gpus(2).max_num_seqs(min=MIN_BATCH_SIZE),
         key=lambda r: r.max_num_seqs,
     )
     assert len(h100_gpu1_runs) == 3, f"Expected 3 GPT OSS 120B H100 1-GPU configs, got {len(h100_gpu1_runs)}"
@@ -1144,7 +1144,7 @@ def section2_5_multi_gpu_scaling() -> None:
     case_study_task = "gpqa"
     task_display_names = {"gpqa": "Problem Solving"}
 
-    case_runs = list(_llm().task(case_study_task).nickname(case_study_model).batch(min=MIN_BATCH_SIZE))
+    case_runs = list(_llm().task(case_study_task).nickname(case_study_model).max_num_seqs(min=MIN_BATCH_SIZE))
     case_gpu_runs: dict[tuple[str, int], list[LLMRun]] = {}
     for r in case_runs:
         case_gpu_runs.setdefault((r.gpu_model, r.num_gpus), []).append(r)
@@ -1235,7 +1235,7 @@ def section3_power() -> None:
 
         for idx, (model_name, num_gpus, color) in enumerate(models):
             model_runs = sorted(
-                chat_runs.nickname(model_name).gpu("B200").num_gpus(num_gpus).batch(min=MIN_BATCH_SIZE),
+                chat_runs.nickname(model_name).gpu_model("B200").num_gpus(num_gpus).max_num_seqs(min=MIN_BATCH_SIZE),
                 key=lambda r: r.max_num_seqs,
             )
 
