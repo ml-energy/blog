@@ -57,14 +57,14 @@ To quantify how much these choices matter, we ran a controlled experiment using 
 For each configuration, we repeated the profiling trial 10 times and report the distribution of measured energy consumption.
 
 <figure markdown>
-<div style="display: flex; gap: 2%;" markdown>
-<div style="flex: 1; min-width: 0;" markdown>
+<div style="display: flex; flex-wrap: wrap; gap: 2%;" markdown>
+<div style="flex: 1; min-width: 300px;" markdown>
 
 ![Measurement duration](assets/thermally-stable-profiling/duration_energy_plot-light.svg#only-light)
 ![Measurement duration](assets/thermally-stable-profiling/duration_energy_plot-dark.svg#only-dark)
 
 </div>
-<div style="flex: 1; min-width: 0;" markdown>
+<div style="flex: 1; min-width: 300px;" markdown>
 
 ![Cooldown duration](assets/thermally-stable-profiling/cooldown_energy_plot-light.svg#only-light)
 ![Cooldown duration](assets/thermally-stable-profiling/cooldown_energy_plot-dark.svg#only-dark)
