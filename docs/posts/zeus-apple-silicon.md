@@ -7,7 +7,7 @@ categories:
   - energy
   - measurement
 links:
-  - ZeusMonitor: https://ml.energy/zeus/reference/monitor/#zeus.monitor.ZeusMonitor
+  - ZeusMonitor: https://ml.energy/zeus/reference/monitor/energy/#zeus.monitor.energy.ZeusMonitor
   - zeus-apple-silicon: https://github.com/ml-energy/zeus-apple-silicon
 ---
 

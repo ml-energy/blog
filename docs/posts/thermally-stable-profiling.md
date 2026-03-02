@@ -8,7 +8,7 @@ categories:
   - measurement
 links:
   - Kareus paper: https://arxiv.org/abs/2601.17654
-  - ZeusMonitor: https://ml.energy/zeus/reference/monitor/#zeus.monitor.ZeusMonitor
+  - ZeusMonitor: https://ml.energy/zeus/reference/monitor/energy/#zeus.monitor.energy.ZeusMonitor
 ---
 
 # Thermally Stable Profiling for Accurate GPU Energy Measurement
@@ -21,35 +21,24 @@ In this post, we describe a GPU energy profiling methodology adopted in [Kareus]
 
 ## The Problem
 
-We use [Zeus](https://ml.energy/zeus) (which internally uses [NVML](https://docs.nvidia.com/deploy/nvml-api/)) to measure the time and energy of GPU workloads.
+We use [Zeus](https://ml.energy/zeus) (which internally uses [NVML](https://docs.nvidia.com/deploy/nvml-api/)) to measure the energy consumption of GPU workloads.
 At first glance this seems straightforward: start a measurement window, run the workload, stop the window, read off the energy.
 But two factors conspire to make this unreliable.
 
 **NVML's sampling granularity.**
-NVML updates its energy counters at a coarse granularity — approximately every 100 ms on NVIDIA GPUs.[^1]
-When dealing with short workloads, such as a handful of kernels that finishes in milliseconds, the only practical solution is to execute the workload repeatedly within a measurement window and report the average energy per run.
-Even then, short measurement windows — such as one second — remain vulnerable to "sampling noise." Because there are so few updates in the time span, those discrete jumps can heavily distort the final energy reading.
+NVML updates its energy counters at a coarse granularity, approximately every 100 ms on NVIDIA GPUs.[^1]
+When dealing with short workloads, such as a handful of kernels that finishes in milliseconds, the only practical solution is to execute the workload repeatedly within a measurement window and take the average energy per run.
+Even then, short measurement windows, such as one second, remain vulnerable to "sampling noise." Because there are so few updates in the time span, those discrete jumps can heavily distort the final energy reading.
 
-[^1]: The 100 ms counter update interval is observable in the [NVIDIA open GPU kernel module source](https://github.com/NVIDIA/open-gpu-kernel-modules).
+[^1]: The 100 ms minimum counter update interval can be found in the [NVIDIA open GPU kernel module source](https://github.com/NVIDIA/open-gpu-kernel-modules/blob/590.48.01/src/nvidia/interface/nvrm_registry.h#L2982).
 
 **Temperature-dependent power draw.**
-GPU power consumption is temperature-dependent.
+Hardware power consumption is temperature-dependent; higher temperature primarily leads to increased leakage current and thus higher power draw.
 When you run a series of profiling trials back-to-back, each trial heats the GPU up.
 The next trial then starts from an elevated temperature and draws more power, producing a systematically higher energy reading.
 If you're comparing two configurations and one happens to run after a hotter predecessor, the comparison is unfair.
 
 We address both with what we call *thermally stable profiling*: a measurement window long enough for stable readings, and a cooldown period between trials to reset the GPU's temperature.
-
-## Design Choices
-
-**Measurement window.**
-We execute each workload repeatedly over a 5-second window rather than timing a single run.
-A warm-up pass first determines execution time; from that, we compute the number of iterations needed to fill 5 seconds.
-
-**Thermal cooldown.**
-We insert a 5-second pause between consecutive profiling trials.
-In our environment, this reliably brings the GPU below 32°C before the next trial begins.
-Note that the right duration depends on the server's cooling capability.
 
 ## Experimental Analysis
 
@@ -71,35 +60,41 @@ For each configuration, we repeated the profiling trial 10 times and report the 
 
 </div>
 </div>
-<figcaption>Impact of changing (a) measurement duration and (b) cooldown duration. We report the distribution of energy across 10 repeated trials, along with the average GPU temperature before and after measurement.</figcaption>
+<figcaption>Impact of changing measurement duration (left) and cooldown duration (right). We report the distribution of energy across 10 repeated trials, along with the average GPU temperature before and after measurement.</figcaption>
 </figure>
 
 ### Measurement Duration
 
-We fix the cooldown to 5 seconds and sweep the measurement window.
+Rather than measuring a single run, we execute each workload repeatedly over a measurement window: a warm-up pass determines execution time, and from that we compute how many iterations fill the window.
+We fix the between-trial cooldown duration to 5 seconds and sweep the measurement window duration.
 
 When the measurement window is short (e.g., less than 2 seconds), the reported energy consumption exhibits large variability. 
 This is attributed to the 100 ms NVML counter update interval, which introduces discretization noise in short-duration measurements. 
 In addition, shorter windows yield lower average energy readings because the GPU has not fully warmed up.
-Energy measurement stabilizes from 5 seconds onward, which is why we chose 5 seconds as our measurement duration.
+Energy measurement stabilizes from 5 seconds onward, so we adopt that as our measurement duration.
 
-!!! Takeaway
-    Measurement windows shorter than ~5 seconds exhibit high variability due to NVML's 100 ms sampling granularity. Energy measurement stabilize from 5 seconds onward.
+<!-- !!! Takeaway
+    Measurement windows shorter than ~5 seconds exhibit high variability due to NVML's 100 ms sampling granularity. Energy measurement stabilize from 5 seconds onward. -->
 
 ### Cooldown Duration
 
-We fix the measurement window to 5 seconds and sweep the cooldown duration between consecutive trials.
+Between consecutive profiling trials, we insert a cooldown pause to let the GPU return to a stable temperature before the next measurement.
+We fix the measurement window to 5 seconds and sweep the cooldown duration.
 
 We observe that average energy consumption strongly correlates with the GPU temperature at the start of measurement.
 Without a cooldown period, each trial inherits a hotter GPU from the previous run, resulting in biased and high-variance energy measurements.
-With 5 seconds of cooldown, the GPU returns to a stable thermal baseline before each trial.
+In our environment, 5 seconds of cooldown is enough for the GPU to return to a stable thermal baseline before each trial.
 Beyond this point, the measured energy consumption stabilizes, so we adopt a 5-second cooldown duration.
 
+<!-- !!! Takeaway
+    Without thermal cooldown between trials, measured energy correlates strongly with GPU temperature at the start of measurement. A 
+    5-second cooldown brings the GPU to a consistent baseline and eliminates this bias. -->
+
 !!! Takeaway
-    Without thermal cooldown between trials, measured energy correlates strongly with GPU temperature at the start of measurement. A 5-second cooldown brings the GPU to a consistent baseline and eliminates this bias.
+    In this experiment, we settle on a 5-second measurement window (long enough to average out NVML's 100 ms counter granularity) and a 5-second cooldown between trials (enough to bring the GPU back to a stable thermal baseline). The right values depend on your workload, your GPU, and your cooling environment, so these parameters need to be profiled for each setup.
 
 ## Summing Up
 
 Accurate GPU energy profiling requires attending to two things: giving the measurement window enough time for NVML counter statistics, and resetting the GPU's thermal state between consecutive trials.
 In our setup, 5 seconds for the measurement window and 5 seconds for cooldown are sufficient.
-The right numbers will vary by GPU firmware and server cooling capability, but the experimental methodology generalizes to any environment.
+The right numbers will vary by workload, GPU, and server cooling capability, but the experimental methodology generalizes to any environment.
