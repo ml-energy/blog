@@ -8,6 +8,7 @@ categories:
   - measurement
 links:
   - Kareus paper: https://arxiv.org/abs/2601.17654
+  - zeus.profile: http://ml.energy/zeus/reference/profile/#zeus.profile
   - ZeusMonitor: https://ml.energy/zeus/reference/monitor/energy/#zeus.monitor.energy.ZeusMonitor
 ---
 
@@ -15,7 +16,7 @@ links:
 
 Profiling is only as useful as it is accurate.
 For example, when an optimizer evaluates candidate configurations, biased or noisy measurements can steer it toward the wrong answer.
-In this post, we describe a GPU energy profiling methodology adopted in [Kareus](https://arxiv.org/abs/2601.17654), and show experimentally why it matters and what we found to be the right settings.
+In this post, we describe the GPU energy profiling methodology adopted in [Kareus](https://arxiv.org/abs/2601.17654), show experimentally why it matters, and introduce the [`zeus.profile`](http://ml.energy/zeus/reference/profile/#zeus.profile) module that automates the process.
 
 <!-- more -->
 
@@ -73,9 +74,6 @@ This is attributed to the 100 ms NVML counter update interval, which introduces 
 In addition, shorter windows yield lower average energy readings because the GPU has not fully warmed up.
 Energy measurement stabilizes from 5 seconds onward, so we adopt that as our measurement duration.
 
-<!-- !!! Takeaway
-    Measurement windows shorter than ~5 seconds exhibit high variability due to NVML's 100 ms sampling granularity. Energy measurement stabilize from 5 seconds onward. -->
-
 ### Cooldown Duration
 
 Between consecutive profiling trials, we insert a cooldown pause to let the GPU return to a stable temperature before the next measurement.
@@ -86,15 +84,57 @@ Without a cooldown period, each trial inherits a hotter GPU from the previous ru
 In our environment, 5 seconds of cooldown is enough for the GPU to return to a stable thermal baseline before each trial.
 Beyond this point, the measured energy consumption stabilizes, so we adopt a 5-second cooldown duration.
 
-<!-- !!! Takeaway
-    Without thermal cooldown between trials, measured energy correlates strongly with GPU temperature at the start of measurement. A 
-    5-second cooldown brings the GPU to a consistent baseline and eliminates this bias. -->
-
 !!! Takeaway
     In this experiment, we settle on a 5-second measurement window (long enough to average out NVML's 100 ms counter granularity) and a 5-second cooldown between trials (enough to bring the GPU back to a stable thermal baseline). The right values depend on your workload, your GPU, and your cooling environment, so these parameters need to be profiled for each setup.
+
+## Try It Out
+
+The [`zeus.profile`](http://ml.energy/zeus/reference/profile/#zeus.profile) module provides functions that sweep candidate measurement and cooldown durations and identify configurations that yield stable, low-variance energy readings.
+
+Four functions are exposed:
+
+- [`profile_parameters`](http://ml.energy/zeus/reference/profile/#zeus.profile.profile_parameters) -- Auto-profile both measurement and cooldown durations.
+- [`profile_measurement_duration`](http://ml.energy/zeus/reference/profile/#zeus.profile.profile_measurement_duration) -- Sweep measurement durations with a fixed cooldown.
+- [`profile_cooldown_duration`](http://ml.energy/zeus/reference/profile/#zeus.profile.profile_cooldown_duration) -- Sweep cooldown durations with a fixed measurement duration.
+- [`measure`](http://ml.energy/zeus/reference/profile/#zeus.profile.measure) -- Measure energy once with known measurement and cooldown durations.
+
+Here's a quick example:
+
+```python
+from zeus.monitor import ZeusMonitor
+from zeus.profile import profile_parameters, measure
+
+monitor = ZeusMonitor(gpu_indices=[0])
+
+# Automatically find stable measurement and cooldown durations.
+m_report, c_report = profile_parameters(
+    target_function=attention_layer,
+    zeus_monitor=monitor,
+    # trial_stddev_threshold=0.01,
+)
+
+# Each report marks configurations whose energy standard deviation 
+# across trials is below trial_stddev_threshold as "valid"
+print(m_report)
+print(c_report)
+
+# Pick the shortest valid durations from each sweep report.
+m_dur = next(e.measurement_duration for e in m_report.entries if e.is_valid)
+c_dur = next(e.cooldown_duration for e in c_report.entries if e.is_valid)
+
+# Use those durations for a single stable measurement.
+result = measure(attention_layer, monitor, m_dur, c_dur)
+print(f"{result.energy_per_iter:.4f} J/iter  ({result.time_per_iter:.4f} s/iter)")
+```
+
+!!! Tip "Choosing configurations by temperature"
+    Each [`SweepResult`](http://ml.energy/zeus/reference/profile/#zeus.profile.SweepResult) includes `avg_temperature_before` and `avg_temperature_after`. If you have a target GPU temperature in mind — for example, the typical temperature observed when the workload runs in production — you can filter valid configurations further by checking the temperature values.
+
+!!! Tip "Multi-GPU"
+    In a distributed setting, each rank should create its own [`ZeusMonitor`](http://ml.energy/zeus/reference/monitor/#zeus.monitor.ZeusMonitor) with `gpu_indices=[local_rank]` and pass it to the profiling functions.
 
 ## Summing Up
 
 Accurate GPU energy profiling requires attending to two things: giving the measurement window enough time for NVML counter statistics, and resetting the GPU's thermal state between consecutive trials.
-In our setup, 5 seconds for the measurement window and 5 seconds for cooldown are sufficient.
-The right numbers will vary by workload, GPU, and server cooling capability, but the experimental methodology generalizes to any environment.
+The right durations depend on your workload, GPU, and cooling environment.
+The [`zeus.profile`](http://ml.energy/zeus/reference/profile/#zeus.profile) module automates this search: it sweeps candidate durations, flags the ones that produce stable readings, and lets you pick the configuration that best fits your needs for use with [`measure`](http://ml.energy/zeus/reference/profile/#zeus.profile.measure).
