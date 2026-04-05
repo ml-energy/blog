@@ -19,8 +19,6 @@ from matplotlib.patches import Patch
 
 from mlenergy_data.records.runs import DiffusionRun, DiffusionRuns, LLMRun, LLMRuns
 
-mpl.rcParams["svg.hashsalt"] = "42"
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(name)s %(levelname)s %(message)s",
@@ -144,6 +142,7 @@ def savefig(fig_fn, prefix: str) -> None:
 
         with plt.style.context(mpl_style):
             mpl.rcParams["svg.hashsalt"] = "42"
+            mpl.rcParams["svg.fonttype"] = "none"
             with plt.rc_context(FONT_PARAMS):
                 fig = fig_fn()
 
