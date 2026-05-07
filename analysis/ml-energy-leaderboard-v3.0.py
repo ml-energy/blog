@@ -17,7 +17,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
-from mlenergy_data.records.runs import DiffusionRun, DiffusionRuns, LLMRun, LLMRuns
+from mlenergy.data.records.runs import DiffusionRun, DiffusionRuns, LLMRun, LLMRuns
 
 logging.basicConfig(
     level=logging.INFO,
